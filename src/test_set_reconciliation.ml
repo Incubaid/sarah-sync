@@ -18,4 +18,15 @@ let test_set_reconc () =
   ] 
   in 
   let test_one (set1, set2, only_set1, only_set2) =
+    let m = findM set1 set2 in
+    let pts = evalPts m in
+    let (sols, extra) = S.reconcile set1 set2 pts in
+    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ; 
+    OUnit.assert_equal (List.sort compare extra) (List.sort compare only_set2)
+  in 
+  List.iter test_one tests
   
+
+let suite = "Set Reconciliation" >::: [ "test_set_reconciliation" >:: test_set_reconc ]
+
+let _ = run_test_tt_main suite
