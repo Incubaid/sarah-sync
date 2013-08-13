@@ -7,3 +7,5 @@
 *.cmx
 *.cmxs
 *.cmxa
+src/_build/*
+*.native
