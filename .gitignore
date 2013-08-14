@@ -9,3 +9,4 @@
 *.cmxa
 src/_build/*
 *.native
+src/finite_field.ml
