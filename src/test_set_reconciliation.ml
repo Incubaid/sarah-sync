@@ -2,8 +2,6 @@
 
 open OUnit
 open F_128
-open F_256
-open F_512
 open F_1024
 open Set_reconciliation
 open Evaluation_points
