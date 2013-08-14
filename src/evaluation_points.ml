@@ -58,7 +58,7 @@ struct
 	    else mid'
 	  in 
 	  if mid = max
-	  then (if onceFound then prevFound else raise Unable_to_find_good_m )
+	  then (if onceFound then prevFound else max )
 	  else 
 	    begin
 	      let pts = evalPts mid in
