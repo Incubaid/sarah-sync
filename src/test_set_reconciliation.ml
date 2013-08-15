@@ -1,19 +1,15 @@
 (* Tests for set reconciliation *)
 
 open OUnit
-open F_128
-open F_1024
+open FiniteField
 open Set_reconciliation
 open Evaluation_points
 
-module F1 = F_128.TestFiniteField
-module S1 = SetReconciliation(F1)
-module EP1 = EvaluationPts(F1)
+module S1 = SetReconciliation(GF128)
+module EP1 = EvaluationPts(GF128)
 
-module F2 = F_1024.TestFiniteField
-module S2 = SetReconciliation(F2)
-module EP2 = EvaluationPts(F2)
-
+module S2 = SetReconciliation(GF1024)
+module EP2 = EvaluationPts(GF1024)
 
 let test_set_reconc () =
   let tests = [      (* (set1 , set2 , delta1, delta2) *)
@@ -31,7 +27,12 @@ let test_set_reconc () =
     OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ; 
     OUnit.assert_equal (List.sort compare extra) (List.sort compare only_set2)
   in 
-  List.iter test_one tests
+  List.iter test_one 
+    ( List.map 
+       (fun (a,b,c,d) -> 
+	 (List.map GF128.wrap a, List.map GF128.wrap b, List.map GF128.wrap c, List.map GF128.wrap d)
+       )
+       tests )
 
 
 let test_set_reconc_bigger () =
@@ -52,14 +53,18 @@ let test_set_reconc_bigger () =
       [1; 2; 3; 4; 5 ; 6 ; 7 ; 8 ; 9 ; 10 ; 314 ; 315 ; 316 ; 317 ; 318; 319 ; 320 ; 321 ; 322 ; 323; 324 ; 325 ; 326 ; 327 ; 328 ; 329 ; 330 ] , 
       [11 ; 12 ; 13 ;14 ; 15 ; 16 ;17 ; 18 ;19 ;20 ; 21 ; 22 ; 23 ; 24 ;25 ;26 ;27 ;28 ; 29 ;30 ], 
       [314 ; 315 ; 316 ; 317 ; 318; 319 ; 320 ; 321 ; 322 ; 323; 324 ; 325 ; 326 ; 327 ; 328 ; 329 ; 330] ) ;
- (*  ( [1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26 ; 27; 28; 29; 30] ,  (* System no solution *)
+   ( [1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26 ; 27; 28; 29; 30] ,
       [60 ; 61; 62 ; 63 ; 64 ; 65 ; 66 ; 67 ; 68 ; 69 ;70 ; 71 ; 72 ; 73 ; 74 ; 75 ; 76 ; 77 ; 78 ; 79 ; 80; 81; 82; 83; 84; 85; 86; 87; 88; 89; 90] , 
       [1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26 ; 27; 28; 29; 30], 
-      [60 ; 61; 62 ; 63 ; 64 ; 65 ; 66 ; 67 ; 68 ; 69 ;70 ; 71 ; 72 ; 73 ; 74 ; 75 ; 76 ; 77 ; 78 ; 79 ; 80; 81; 82; 83; 84; 85; 86; 87; 88; 89; 90 ] ) *)
+      [60 ; 61; 62 ; 63 ; 64 ; 65 ; 66 ; 67 ; 68 ; 69 ;70 ; 71 ; 72 ; 73 ; 74 ; 75 ; 76 ; 77 ; 78 ; 79 ; 80; 81; 82; 83; 84; 85; 86; 87; 88; 89; 90 ] ) ; 
     ( [1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20] ,
       [60 ; 61; 62 ; 63 ; 64 ; 65 ; 66 ; 67 ; 68 ; 69 ;70 ; 71 ; 72 ; 73 ; 74 ; 75 ; 76 ; 77 ; 78 ; 79 ; 80] , 
       [1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20], 
-      [60 ; 61; 62 ; 63 ; 64 ; 65 ; 66 ; 67 ; 68 ; 69 ;70 ; 71 ; 72 ; 73 ; 74 ; 75 ; 76 ; 77 ; 78 ; 79 ; 80 ] )
+      [60 ; 61; 62 ; 63 ; 64 ; 65 ; 66 ; 67 ; 68 ; 69 ;70 ; 71 ; 72 ; 73 ; 74 ; 75 ; 76 ; 77 ; 78 ; 79 ; 80 ] ) ;
+    ( [1],
+      [1],
+      [],
+      [])
   ] 
   in 
   let test_one (set1, set2, only_set1, only_set2) =
@@ -71,6 +76,12 @@ let test_set_reconc_bigger () =
     OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1)  ~msg:msgNum ; 
     OUnit.assert_equal (List.sort compare extra) (List.sort compare only_set2) ~msg:msgDenom 
   in 
-  List.iter test_one tests
+  List.iter test_one
+    ( List.map 
+       (fun (a,b,c,d) -> 
+	 (List.map GF1024.wrap a, List.map GF1024.wrap b, List.map GF1024.wrap c, List.map GF1024.wrap d)
+       )
+       tests )
+
     
 

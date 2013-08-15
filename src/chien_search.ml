@@ -17,7 +17,7 @@ struct
       roots := root :: !roots ;
     in
     if coeffs.(0) = F.zero then foundRoot F.zero ;
-    let q = int_of_float (2. ** (float_of_int F.w)) in
+    let q = F.q in
     let updateGamma j _ =  
       coeffs.(j) <- F.mult coeffs.(j) (F.exp F.primEl j)
     in 
@@ -38,7 +38,7 @@ struct
       roots := root :: !roots ;
     in
     if coeffs.(0) = F.zero then foundRoot F.zero ;
-    let q = int_of_float (2. ** (float_of_int F.w)) in
+    let q = F.q in
     let updateGamma j _ =  
       coeffs.(j) <- F.mult coeffs.(j) (F.exp F.primEl j)
     in 
