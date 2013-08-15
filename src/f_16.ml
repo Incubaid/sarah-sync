@@ -13,14 +13,21 @@ struct
   let primEl = 2
   let one = 1
   let zero = 0
-  let exp a i = 
+ (* let exp a i = 
     if i = 0
     then one
     else
       begin
 	let allAs = Array.make i a in
 	Array.fold_left mult one allAs
-      end 
+      end *)
+  let exp a i = 
+    let rec loop acc j = 
+      if j = 0
+      then acc 
+      else loop (mult acc a) (j-1)
+    in
+    loop one i
   let print = print_int
   let eq = (=)
   let wrap el = el
