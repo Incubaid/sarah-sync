@@ -96,16 +96,22 @@ struct
   (* Copy of a matrix *)
   let copy_matrix (mat : matrix) = Array.map Array.copy mat 
 
-  (* Index of the maximal element of an array *)
-  let indexMaxElement array = 
-    let index = ref 0 in
-    let find_max i el = 
-      if el > array.(!index)
-      then index := i
-      else ()
-    in 
-    Array.iteri find_max array ;
-    !index
+  (* Index of maximal element in part of a column of a matrix *)
+  let index_max_element col start stop (mat : matrix) =
+    let rec find_max i curr_max_index =
+      if i > stop
+      then curr_max_index
+      else 
+	begin
+	  let curr_max_index' =
+	    if mat.(col).(i) > mat.(col).(curr_max_index)
+	    then i
+	    else curr_max_index
+	  in 
+	  find_max (i + 1) curr_max_index'
+	end
+    in
+    find_max (start + 1) start
 
   (* Gauss elimination. Overwrites the matrix.
      When matrix is singular, the procedure terminates. *)
@@ -118,13 +124,12 @@ struct
 	let k = ref 0 in
 	let continue = ref true in
 	while ( !continue && !k < m ) do
-	  let colK = Array.sub (getColumn !k mat) !k (m - !k) in 
-	  let i_max = (indexMaxElement colK) + !k in
+	  let i_max = index_max_element !k !k (m-1) mat in
 	  if mat.(i_max).(!k) = F.zero
 	  then continue := false
 	  else 
-	    let tmp = Array.copy mat.(!k) in
-	    let () = mat.(!k) <- Array.copy mat.(i_max) in
+	    let tmp = mat.(!k) in
+	    let () = mat.(!k) <- mat.(i_max) in
 	    let () = mat.(i_max) <- tmp in
 	    for i = !k + 1 to m - 1 do
               for j = !k + 1 to n - 1 do
@@ -140,11 +145,7 @@ struct
   let isZeroRow (row : vector) = 
     let row_list = Array.to_list row in
     List.for_all ((=) F.zero) row_list
-      
-  (* Determine whether a matrix contains zero-rows *)
-  let hasZeroRows (mat : matrix) = 
-    let list = Array.to_list mat in 
-    List.exists isZeroRow list
+    
 
   (* Determine whether a row is invalid, i.e. (0,0,...,c) *)
   let isInvalidRow (row : vector) = 

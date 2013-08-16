@@ -47,7 +47,7 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
     let eq = (=)
     let wrap el = el
     let w = P.w
-    let q = (lsl) 1 P.w
+    let q = 1 lsl P.w
 
 end
 
