@@ -10,7 +10,7 @@ struct
 
 
   (* Extra function *)
-  let isZero (pol : polynom) =
+  let is_zero (pol : polynom) =
     List.for_all ((=) F.zero) (Array.to_list pol)
 
   (* Degree of a polynomial. Highest coefficient different from zero *)
@@ -19,30 +19,30 @@ struct
       if (pol.(i) <> F.zero || i = 0)
       then i
       else aux (i-1)
-    in 
-    if isZero pol
+    in
+    if is_zero pol
     then 0
     else aux (Array.length pol - 1)
 
 
-  (* Euclidean division of two polynomials. 
+  (* Euclidean division of two polynomials.
      Degree of the first polynomial should be larger than or equal to that of the second. *)
-  let divide (pol_a : polynom) (pol_b : polynom) = 
+  let divide (pol_a : polynom) (pol_b : polynom) =
     let degree_a = get_degree pol_a in
     let degree_b = get_degree pol_b in
     let remainder = Array.copy pol_a in
-    let quotient = Array.make (degree_a - degree_b + 1) F.zero in  
+    let quotient = Array.make (degree_a - degree_b + 1) F.zero in
     let count_a = ref degree_a in
     while !count_a >= degree_b do
       let quot = F.div remainder.(!count_a) pol_b.(degree_b) in
       let adapt_remainder i el =
-	if ( i < !count_a - degree_b || i > !count_a - 1 )
-	then ()
-	else 
-	  begin
-	    let result = F.min el (F.mult quot pol_b.(i - (!count_a - degree_b))) in
-	    remainder.(i) <- result
-	  end
+        if ( i < !count_a - degree_b || i > !count_a - 1 )
+        then ()
+        else
+          begin
+            let result = F.min el (F.mult quot pol_b.(i - (!count_a - degree_b))) in
+            remainder.(i) <- result
+          end
       in
       Array.iteri adapt_remainder remainder ;
       quotient.(!count_a - degree_b) <- quot ;
@@ -58,32 +58,32 @@ struct
 
 
   (* Find the unique monic gcd of two polynomials *)
-  let gcd (pol_a : polynom) (pol_b : polynom) = 
+  let gcd (pol_a : polynom) (pol_b : polynom) =
     let rec aux p1 p2 =
-      if isZero p2
+      if is_zero p2
       then p1
-      else 
-	begin
-	  let _, rest = divide p1 p2 in
-	  aux p2 rest
-	end
+      else
+        begin
+          let _, rest = divide p1 p2 in
+          aux p2 rest
+        end
     in
     let deg_a = get_degree pol_a in
     let deg_b = get_degree pol_b in
-    let result = 
+    let result =
       if deg_a < deg_b
       then aux pol_b pol_a
       else aux pol_a pol_b
     in
-    make_monic result 
+    make_monic result
 
 
 end
 
 
-(* Testing *) 
+(* Testing *)
 (*
-module Field = struct
+  module Field = struct
   type t = float
   let zero = 0.
   let one = 1.
@@ -98,27 +98,26 @@ module Field = struct
   let wrap = float_of_int
   let w = 0
   let q = 0
-end *)
+  end *)
 
 module Field = GF128
 
 module GC = Gcd(Field)
 
-(*let pol1 = 
+(*let pol1 =
   let pol1' = [|27 ; 10; 1|] in
   Array.map Field.wrap pol1'
 
 
-let pol2 =
+  let pol2 =
   let pol2' = [|9 ; 1|] in
   Array.map Field.wrap pol2'  ;;
 
-let quot,r = GC.divide pol1 pol2 in
-let g = GC.gcd pol1 pol2 in
-Array.iter (fun el -> (Field.print el ; print_string " ")) quot ;
-print_newline () ;
-Array.iter (fun el -> (Field.print el ; print_string " ")) r ;
-print_newline () ;
-Array.iter (fun el -> (Field.print el ; print_string " ")) g ;
-print_newline () ; *)
-
+  let quot,r = GC.divide pol1 pol2 in
+  let g = GC.gcd pol1 pol2 in
+  Array.iter (fun el -> (Field.print el ; print_string " ")) quot ;
+  print_newline () ;
+  Array.iter (fun el -> (Field.print el ; print_string " ")) r ;
+  print_newline () ;
+  Array.iter (fun el -> (Field.print el ; print_string " ")) g ;
+  print_newline () ; *)

@@ -3,7 +3,7 @@
 open FiniteField
 open Gcd
 
-module Square_Free = 
+module Square_Free =
   functor (F : FINITEFIELD) ->
 struct
   type element = F.t
@@ -13,31 +13,31 @@ struct
 
   (* Derivative of a polynom *)
   let derivative (pol : polynom) =
-    Array.init (Array.length pol - 1) 
+    Array.init (Array.length pol - 1)
       (
-	fun i ->
-	F.mult (F.wrap (i+1)) pol.(i + 1)
+        fun i ->
+          F.mult (F.wrap (i+1)) pol.(i + 1)
       )
 
-  (* Verify whether a polynomial is square-free. 
+  (* Verify whether a polynomial is square-free.
      This is the case when the gcd of the polynom and its derivative is 1.*)
   let is_square_free (pol : polynom) =
-      let pol' = derivative pol in
-      let g = G.gcd pol pol' in
-      (G.get_degree g = 0) && (g.(0) = F.one)
-    	
+    let pol' = derivative pol in
+    let g = G.gcd pol pol' in
+    (G.get_degree g = 0) && (g.(0) = F.one)
+
   (* Make polynomial square-free *)
-  let square_free (pol : polynom) = 
+  let square_free (pol : polynom) =
     let aux f =
       let f' = derivative f in
       let g = G.gcd f f' in
       if (G.get_degree g = 0) && (g.(0) = F.one)
       then f
-      else 
-	begin
-	  let q,r = G.divide f g in
-	  q
-	end
+      else
+        begin
+          let q,r = G.divide f g in
+          q
+        end
     in
     aux pol
 
@@ -63,7 +63,7 @@ module Field = struct
   let wrap = float_of_int
   let w = 0
   let q = 0
-end 
+end
 
 module SF = Square_Free(Field);;
 
@@ -77,4 +77,3 @@ Array.iter (fun el -> (Field.print el ; print_string " ")) pol1';
 print_newline ();
 Array.iter (fun el -> (Field.print el ; print_string " ")) d;
 print_newline ()
-
