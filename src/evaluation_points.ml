@@ -3,18 +3,18 @@
 open FiniteField
 open Set_reconciliation
 
-module EvaluationPts = 
+module EvaluationPts =
   functor (F : FINITEFIELD) ->
 struct
 
   type element = F.t
 
   exception Unable_to_find_good_m
-    
+
   module S = SetReconciliation(F)
 
   (* Produce a given number of evaluation points. These will be: [q-1, q-2, ...] *)
-  let evalPts m = 
+  let evalPts m =
     let q = F.q in
     let rec getPoints start len =
       if len = 0
@@ -23,9 +23,9 @@ struct
     in
     getPoints (q - 1) m
 
-  (* Determine extra evaluation points, used in the function to determine an upper bound on m. 
-     m: number of evaluation points in the algorithm, k: number of extra points requested *) 
-  let extraEvalPts m k =             
+  (* Determine extra evaluation points, used in the function to determine an upper bound on m.
+     m: number of evaluation points in the algorithm, k: number of extra points requested *)
+  let extraEvalPts m k =
     let q = F.q in
     let rec getPoints start len =
       if len = 0
@@ -35,62 +35,80 @@ struct
     getPoints (q - m - 1) k
 
   (* Evaluate a polynom in a given point *)
-  let evaluatePol (coeffs : element array) (pnt : element) = 
+  let evaluatePol (coeffs : element array) (pnt : element) =
     let terms = Array.mapi (fun i coeff ->
       F.mult coeff (F.exp pnt i)) coeffs
     in
     Array.fold_left F.plus F.zero terms
-      
+
   (* Determine a close upper bound on the number of evaluation points needed by the reconciliation algorithm *)
   let findM (s1 : S.set) (s2 : S.set) =
-    let delta = List.length s1 - List.length s2 in
-    let initMin = abs delta in
-    let initMax = List.length s1 + List.length s2 in
-    let rec search min max onceFound prevFound = 
+    let m1 = List.length s1 in
+    let delta = m1 - List.length s2 in
+    let initMin =
+      if abs delta = 0
+      then 1
+      else abs delta
+    in
+    let initMax = m1 + List.length s2 in
+    let rec search min max previous_min =
       if max < min
       then raise Unable_to_find_good_m
-      else 
-	begin
-	  let mid =
-	    let mid' = (min + max) / 2 in 
-	    if (mid' - delta) mod 2 <> 0   (* Ensure same parity *)
-	    then mid' + 1
-	    else mid'
-	  in 
-	  if mid = max
-	  then (if onceFound then prevFound else max )
-	  else 
-	    begin
-	      let pts = evalPts mid in
-	      try
-		let cfsNum, cfsDenom = S.interpolation s1 s2 pts in
-		let k = 1 in        (* CHANGE THIS *)
-		let extraPts = extraEvalPts mid k in
-		let actualVals = S.evalCharPols s1 s2 extraPts in
-		let ourNumVals = List.map (evaluatePol cfsNum) extraPts in
-		let ourDenomVals = List.map (evaluatePol cfsDenom) extraPts in
-		let ourVals = List.map2 F.div ourNumVals ourDenomVals in
-		let ok = List.for_all2 F.eq actualVals ourVals in
-		if ok
-		then 
-		  let max' = mid in
-		  let onceFound' = true in
-		  let prevFound' = mid in
-		  search min max' onceFound' prevFound'
-		else 
-		  if onceFound
-		  then prevFound    (* a previously found solution *)
-		  else 
-		    let min' = mid in
-		    search min' max onceFound prevFound
-	      with e -> 
-		if onceFound
-		then prevFound    (* a previously found solution *)
-		else 
-		  let min' = mid in
-		  search min' max onceFound prevFound
-	    end 
-	end 
-    in 
-    search initMin initMax false 0
+      else
+        begin
+          if min = max
+          then min
+          else
+            begin
+              let good_min =
+                if (min - delta) land 1 <> 0 (* Ensure same parity *)
+                then min + 1
+                else min
+              in
+              let mid =
+                let mid' = (min + max) / 2 in
+                if (mid' - delta) land 1 <> 0   (* Ensure same parity *)
+                then mid' + 1
+                else mid'
+              in
+              let pts = evalPts good_min in
+              try
+                let () = Printf.printf "Considering m: %i.\n%!" good_min in
+                let chi_1 = List.map (S.CharPoly.evalCharPoly s1) pts in
+                let cfsNum, cfsDenom = S.interpolation m1 chi_1 s2 pts in
+                let k = 1 in        (* CHANGE THIS *)
+                let extraPts = extraEvalPts good_min k in
+                let actual_chi_1 = List.map (S.CharPoly.evalCharPoly s1) extraPts in (* !!!! *)
+                let actualVals = S.evalCharPols actual_chi_1 s2 extraPts in
+                let ourNumVals = List.map (evaluatePol cfsNum) extraPts in
+                let ourDenomVals = List.map (evaluatePol cfsDenom) extraPts in
+                let ourVals = List.map2 F.div ourNumVals ourDenomVals in
+                let ok = List.for_all2 F.eq actualVals ourVals in
+                if ok
+                then
+                  begin
+                    if previous_min = -1 (* Only in first step *)
+                    then good_min
+                    else
+                      begin
+                        let new_min = (previous_min + min) / 2 in
+                        let new_max = mid in
+                        search new_min new_max previous_min
+                      end
+                  end
+                else
+                  begin
+                    let new_min = mid in
+                    let new_previous = good_min in
+                    search new_min max new_previous
+                  end
+              with S.InterPol.M.System_no_solution ->
+                let new_min = mid in
+                let new_previous = good_min in
+                search new_min max new_previous
+            end
+        end
+    in
+    search initMin initMax (-1)
+
 end
