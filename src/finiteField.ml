@@ -7,47 +7,52 @@ module type FIELD_PARAM = sig
 end
 
 module type F = sig
-    type t
-    val zero : t
-    val one : t
-    val plus : t -> t -> t
-    val min : t -> t -> t
-    val mult : t -> t -> t
-    val div : t -> t-> t
-    val exp : t -> int -> t   (* Exponentiation *)
-    val primEl : t
-    val print : t-> unit
-    val eq : t-> t -> bool
-    val wrap : int -> t
-    val q : int
+  type t
+  val zero : t
+  val one : t
+  val plus : t -> t -> t
+  val min : t -> t -> t
+  val mult : t -> t -> t
+  val div : t -> t-> t
+  val exp : t -> int -> t   (* Exponentiation *)
+  val primEl : t
+  val print : t-> unit
+  val eq : t-> t -> bool
+  val wrap : int -> t
+  val compare : t -> t -> int
+  val q : int
 end
 
 module type FINITEFIELD = sig
-    include FIELD_PARAM
-    include F
+  include FIELD_PARAM
+  include F
 end
 
 module Make(P:FIELD_PARAM): FINITEFIELD = struct
-    type t = int
-    let zero = 0
-    let one = 1
-    let plus = (lxor)
-    let min = (lxor)
-    let mult a b = Galois.single_multiply a b P.w
-    let div a b = Galois.single_divide a b P.w
-    let exp a i = 
-      let rec loop acc j =
-	if j = 0
-	then acc 
-	else loop (mult acc a) (j-1)
-      in
-      loop one i 
-    let primEl = 2
-    let print = print_int
-    let eq = (=)
-    let wrap el = el
-    let w = P.w
-    let q = 1 lsl P.w
+  type t = int
+  let zero = 0
+  let one = 1
+  let plus = (lxor)
+  let min = (lxor)
+  let mult a b = Galois.single_multiply a b P.w
+  let div a b = Galois.single_divide a b P.w
+  let rec exp a i =
+    if i = 0
+    then one
+    else 
+      begin
+        let square x = mult x x in
+        if i land 1 = 0  (* Even *)
+        then square (exp a (i/2))
+        else mult (square (exp a (i/2))) a
+      end
+  let primEl = 2
+  let print = print_int
+  let eq = (=)
+  let wrap el = el
+  let w = P.w
+  let compare = compare
+  let q = 1 lsl P.w
 
 end
 
