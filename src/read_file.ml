@@ -114,6 +114,7 @@ let get_block begin_pos size file =
   let as_string = Std.input_all chan in
   let block = String.sub as_string begin_pos size in
   close_in chan ;
+  Printf.printf "Getting block.\n%!" ;
   block
 ;; 
 
