@@ -112,7 +112,9 @@ let blocks_using_whitespace file hash_function ~size =
 let get_block begin_pos size file =
   let chan = open_in file in
   let as_string = Std.input_all chan in
-  String.sub as_string begin_pos size
+  let block = String.sub as_string begin_pos size in
+  close_in chan ;
+  block
 ;; 
 
 

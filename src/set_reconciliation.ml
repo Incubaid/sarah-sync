@@ -16,6 +16,14 @@ struct
 
   module Chien = Chien(F)
 
+
+  (* Evaluate a polynom in a given point *)
+  let evaluatePol (coeffs : element array) (pnt : element) =
+    let terms = Array.mapi (fun i coeff ->
+      F.mult coeff (F.exp pnt i)) coeffs
+    in
+    Array.fold_left F.plus F.zero terms
+
   (* Evaluation of the characteristic polynomials. Returns the ratios. *)
   let evalCharPols (chi_1 : element list) (s2 : set) (evalPts : element list) =
     let chi_2 = List.map (CharPoly.evalCharPoly s2) evalPts in
@@ -32,28 +40,19 @@ struct
   (* Reconciliation. Ensure that the roots in numerator and denominator are all different. *)
   let reconcile (m1 : int) (chi_1 : element list) (set2 : set) (evalPts : element list) =
     if List.length evalPts = 0
-    then [],[]   (* No evaluation points *)
+    then []   (* No evaluation points *)
     else
       begin
         let () = Printf.printf "Performing interpolation.\n%!" in
         let cfsNum, cfsDenom = interpolation m1 chi_1 set2 evalPts in
         let roots_num = List.sort compare (Chien.chienSearch2 cfsNum) in
-        let roots_denom = List.sort compare (Chien.chienSearch2 cfsDenom) in
         let () = Printf.printf "Extracting proper roots.\n%!" in
-        let rec find_proper_els list1 list2 proper1 proper2 =
-          match list1, list2 with
-          | (x::xs), (y::ys) ->
-            if x = y
-            then find_proper_els xs ys proper1 proper2
-            else
-              begin
-                if x < y
-                then find_proper_els xs (y::ys) (x::proper1) proper2
-                else find_proper_els (x::xs) ys proper1 (y::proper2)
-              end
-          | rest1, rest2  -> (List.append rest1 proper1 , List.append rest2 proper2)
+        let is_proper_root root = 
+          let eval = evaluatePol cfsDenom root in
+          eval <> F.zero 
         in
-        find_proper_els roots_num roots_denom [] []
+        List.filter is_proper_root roots_num
+
       end
 
 

@@ -34,12 +34,6 @@ struct
     in
     getPoints (q - m - 1) k
 
-  (* Evaluate a polynom in a given point *)
-  let evaluatePol (coeffs : element array) (pnt : element) =
-    let terms = Array.mapi (fun i coeff ->
-      F.mult coeff (F.exp pnt i)) coeffs
-    in
-    Array.fold_left F.plus F.zero terms
 
   (* Determine a close upper bound on the number of evaluation points needed by the reconciliation algorithm *)
   let findM (s1 : S.set) (s2 : S.set) =
@@ -65,47 +59,52 @@ struct
                 then min + 1
                 else min
               in
-              let mid =
-                let mid' = (min + max) / 2 in
-                if (mid' - delta) land 1 <> 0   (* Ensure same parity *)
-                then mid' + 1
-                else mid'
-              in
-              let pts = evalPts good_min in
-              try
-                let () = Printf.printf "Considering m: %i.\n%!" good_min in
-                let chi_1 = List.map (S.CharPoly.evalCharPoly s1) pts in
-                let cfsNum, cfsDenom = S.interpolation m1 chi_1 s2 pts in
-                let k = 1 in        (* CHANGE THIS *)
-                let extraPts = extraEvalPts good_min k in
-                let actual_chi_1 = List.map (S.CharPoly.evalCharPoly s1) extraPts in (* !!!! *)
-                let actualVals = S.evalCharPols actual_chi_1 s2 extraPts in
-                let ourNumVals = List.map (evaluatePol cfsNum) extraPts in
-                let ourDenomVals = List.map (evaluatePol cfsDenom) extraPts in
-                let ourVals = List.map2 F.div ourNumVals ourDenomVals in
-                let ok = List.for_all2 F.eq actualVals ourVals in
-                if ok
-                then
-                  begin
-                    if previous_min = -1 (* Only in first step *)
-                    then good_min
+              if good_min = max
+              then good_min
+              else 
+                begin
+                  let mid =
+                    let mid' = (min + max) / 2 in
+                    if (mid' - delta) land 1 <> 0   (* Ensure same parity *)
+                    then mid' + 1
+                    else mid'
+                  in
+                  let pts = evalPts good_min in
+                  try
+                    let () = Printf.printf "Considering m: %i.\n%!" good_min in
+                    let chi_1 = List.map (S.CharPoly.evalCharPoly s1) pts in
+                    let cfsNum, cfsDenom = S.interpolation m1 chi_1 s2 pts in
+                    let k = 1 in        (* CHANGE THIS *)
+                    let extraPts = extraEvalPts good_min k in
+                    let actual_chi_1 = List.map (S.CharPoly.evalCharPoly s1) extraPts in (* !!!! *)
+                    let actualVals = S.evalCharPols actual_chi_1 s2 extraPts in
+                    let ourNumVals = List.map (S.evaluatePol cfsNum) extraPts in
+                    let ourDenomVals = List.map (S.evaluatePol cfsDenom) extraPts in
+                    let ourVals = List.map2 F.div ourNumVals ourDenomVals in
+                    let ok = List.for_all2 F.eq actualVals ourVals in
+                    if ok
+                    then
+                      begin
+                        if previous_min = -1 (* Only in first step *)
+                        then good_min
+                        else
+                          begin
+                            let new_min = (previous_min + good_min) / 2 in
+                            let new_max = good_min in
+                            search new_min new_max previous_min
+                          end
+                      end
                     else
                       begin
-                        let new_min = (previous_min + min) / 2 in
-                        let new_max = mid in
-                        search new_min new_max previous_min
+                        let new_min = mid in
+                        let new_previous = good_min in
+                        search new_min max new_previous
                       end
-                  end
-                else
-                  begin
+                  with S.InterPol.M.System_no_solution ->
                     let new_min = mid in
                     let new_previous = good_min in
                     search new_min max new_previous
-                  end
-              with S.InterPol.M.System_no_solution ->
-                let new_min = mid in
-                let new_previous = good_min in
-                search new_min max new_previous
+                end
             end
         end
     in

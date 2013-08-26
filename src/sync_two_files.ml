@@ -56,7 +56,7 @@ struct
     let () = Printf.printf "Evaluating the characteristic polynomial of set1.\n%!" in
     let chi_1 = List.map (S.CharPoly.evalCharPoly set1) pts in
     let () = Printf.printf "Reconciling the sets.\n%!" in
-    let to_send_by_1, extra_in_2 = S.reconcile m1 chi_1 set2 pts in
+    let to_send_by_1 = S.reconcile m1 chi_1 set2 pts in
     let () = Printf.printf "Reconciliation done. %i blocks of set1 are missing.\n%!" (List.length to_send_by_1) in
     let element_or_original i (el, hash, begin_pos, size, file) =
       if List.mem el to_send_by_1
@@ -189,7 +189,7 @@ let () = time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/
 let () = Printf.printf "========================================\n%!" in
 let outfile4 = "/home/spare/Documents/Output/test4" in
 let () = time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
-print_string "Done.\n" 
+print_string "Done.\n"
 
 
 (* Testen voor big.bmp *)
@@ -202,4 +202,4 @@ module Sync = Syncing(Field) ;; *)
 
 (*let outfile = "/home/spare/Documents/Output/test3" in
 let () = time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
-print_string "Done.\n" *)
+print_string "Done.\n"*)
