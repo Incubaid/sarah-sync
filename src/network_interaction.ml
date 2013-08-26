@@ -5,7 +5,6 @@ open FiniteField
 open Evaluation_points_network
 open Set_reconciliation
 open Construct_set
-open Read_file
 
 module Sync_with_network = 
   functor (F : FINITEFIELD) ->
@@ -26,12 +25,28 @@ struct
     close_in chan ;
     hash
 
+  (* Get the block from the specified location *)
+  let get_block begin_pos size file =
+    let start = Int64.of_int begin_pos in
+    let get_it ic = 
+      Lwt_io.set_position ic start >>= fun () ->
+      (
+        Lwt_io.printf "Begin_pos: %i,  Pos: %i, Size: %i \n%!" begin_pos (Int64.to_int (Lwt_io.position ic)) size ;
+        Lwt_io.read ~count:size ic >>= fun s ->
+        (
+          Lwt_io.printf "Block: %s\n%!" s ;
+          Lwt.return s
+        )
+      )
+    in
+    Lwt_io.with_file ~mode:Lwt_io.input file get_it
+
 
   (* ====== CLIENT ====== *)
 
   (* Type of messages being sent *)
   type message = Hash of string * int    (* Hash and the block it identifies *)
-                 | Original of string
+                 | Original of (string Lwt.t)
 
 
   (* Creating the message to send to the server *)
@@ -41,6 +56,7 @@ struct
       then 
         begin
           Printf.printf "Constructing message.\n%!" ;
+          Printf.printf "Original: begin_pos %i, size %i.\n%!" begin_pos size ;
           Original (get_block begin_pos size file)
         end
       else Hash (hash, i)
@@ -59,9 +75,12 @@ struct
           begin
             Printf.printf "Sending extra block: nr. %i \n%!" i;
             let _, begin_pos, size, file = List.nth info_client i in
-            let block = get_block begin_pos size file in              (* Acquire the block *)
+            get_block begin_pos size file >>= fun block ->            (* Acquire the block *)
             Lwt_io.write_value oc block >>= fun () ->                 (* Send the block *)
-            (Printf.printf "Block sent.\n%!" ; loop ())
+            (
+              Lwt.ignore_result (Lwt_io.printf "Block sent.\n%!") ; 
+              loop ()
+            )
           end 
       )
     in
@@ -80,11 +99,11 @@ struct
 	    ( 
           Lwt_io.write_value oc l >>= fun () ->                (* Send size of set *)
           Lwt_io.read_value ic >>= fun (max_m, k) ->           (* Maximal values of m and k*)
-            let eval_pts = EP.evalPts max_m in
-            let extra_pts = EP.extraEvalPts k in
-            let chi = List.map (S.CharPoly.evalCharPoly set) eval_pts in
-            let extra = List.map (S.CharPoly.evalCharPoly set) extra_pts in
-            Lwt_io.write_value oc (chi, extra)
+          let eval_pts = EP.evalPts max_m in
+          let extra_pts = EP.extraEvalPts k in
+          let chi = List.map (S.CharPoly.evalCharPoly set) eval_pts in
+          let extra = List.map (S.CharPoly.evalCharPoly set) extra_pts in
+          Lwt_io.write_value oc (chi, extra)
         ) >>= fun () ->
           Lwt_io.read_value ic >>= fun to_send ->
         (
@@ -128,18 +147,19 @@ struct
         match m with
         | Original orig -> orig
         | Hash (hash, i) ->
-          try
-            let begin_pos, size, file = Signature.get_location hash db in
-            Printf.printf "Reconstructing.\n%!" ;
-            get_block begin_pos size file
-          with Not_found ->    (* Should be communicated back to the client, to acquire the original block. *)
-            Lwt_main.run
-              (
-                Printf.printf "Block not found.\n %!" ;
-                Lwt_io.write_value oc i >>= fun () ->
-                (Printf.printf "Reading value.\n%!" ; Lwt_io.read_value ic) >>= fun block ->
-                 Lwt.return block 
-              ) 
+          Lwt.catch 
+            ( fun () ->
+              let begin_pos, size, file = Signature.get_location hash db in
+              Lwt.ignore_result (Lwt_io.printf "Reconstructing.\n%!") ;
+              get_block begin_pos size file
+            )
+            ( function 
+            | Not_found ->                          (* Should be communicated back to the client, to acquire the original block. *)
+              Lwt_io.write_value oc i >>= fun () ->
+              Lwt_io.read_value ic
+            | e -> Lwt_io.printl (Printexc.to_string e) >>= fun () -> 
+              Lwt.return ""                         (* Some other exception *)
+            )
       in 
       let content = List.map decode msg in
      (* Lwt_io.read ic >>= fun location ->
@@ -154,6 +174,7 @@ struct
         )
       ) *)
       Printf.printf "Decoding done.\n%!" ;
+      Lwt_io.write_value oc (-1) >>= fun () ->
       Lwt_io.write oc "Finished" 
       
     ) 
