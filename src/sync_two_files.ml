@@ -87,10 +87,10 @@ struct
       match m with
       | Original orig -> orig
       | Hash (hash, i) ->
-        try
-          let begin_pos, size, file = Signature.get_location hash db in
-          get_block begin_pos size file
-        with Not_found ->    (* Should be communicated back to the client, to acquire the original block. *)
+        let opt = Signature.get_location hash db in
+        match opt with
+        | Some (begin_pos, size, file) -> get_block begin_pos size file
+        | None ->
           number := succ !number ;
           let _, begin_pos, size, file = List.nth info_client i in
           get_block begin_pos size file
@@ -170,25 +170,18 @@ then print_string "the same.\n"
 else print_string "not the same.\n" *)
 
 
-let time f lastarg =
-  let start = Unix.gettimeofday () in
-  let res = f lastarg in
-  let stop = Unix.gettimeofday () in
-  Printf.printf "Execution time: %fs.\n%!" (stop -. start) ;
-  res  ;;
-
 (* Testen voor fisher.txt *)
-let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in 
+(*let outfile1 = "/home/spare/Documents/Output/test1" in
+let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in 
 let () = Printf.printf "========================================\n%!" in
 let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in 
+let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in 
 let () = Printf.printf "========================================\n%!" in
 let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in
+let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in *)
 let () = Printf.printf "========================================\n%!" in
 let outfile4 = "/home/spare/Documents/Output/test4" in
-let () = time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
+let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
 print_string "Done.\n"
 
 
@@ -201,5 +194,5 @@ end)
 module Sync = Syncing(Field) ;; *)
 
 (*let outfile = "/home/spare/Documents/Output/test3" in
-let () = time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
-print_string "Done.\n"*)
+let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
+print_string "Done.\n" *)

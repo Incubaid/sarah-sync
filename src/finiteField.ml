@@ -43,8 +43,8 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
       begin
         let square x = mult x x in
         if i land 1 = 0  (* Even *)
-        then square (exp a (i/2))
-        else mult (square (exp a (i/2))) a
+        then exp (square a) (i/2)
+        else mult (exp (square a) (i/2)) a
       end
   let primEl = 2
   let print = print_int

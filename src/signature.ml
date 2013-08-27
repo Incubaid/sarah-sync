@@ -21,7 +21,10 @@ let add_to_database (hash, begin_pos, size, file) ~db =
   Database_interaction.add hash begin_pos size file db
 
 let get_location hash db =
-  Database_interaction.get_location hash db 
+  try
+    Some (Database_interaction.get_location hash db)
+  with Not_found ->
+    None
 
 let all_keys db =
   Database_interaction.keys db
