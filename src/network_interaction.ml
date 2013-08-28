@@ -2,7 +2,7 @@
 
 open Lwt
 open FiniteField
-open Evaluation_points_network
+open Evaluation_points
 open Set_reconciliation
 open Construct_set
 
@@ -67,7 +67,7 @@ struct
           Lwt.return (Hash (hash, i))
         end
     in
-    mapi element_or_original full_info_client 
+    mapi element_or_original full_info_client
 
 
   (* Sending extra blocks *)
@@ -141,10 +141,8 @@ struct
     let max_m, k = EP.get_max_vals size_client size_server in
     Lwt_io.write_value oc (max_m, k)  >>= fun () ->
     Lwt_io.read_value ic >>= fun (chi, extra ) ->
-    let good_m = EP.findM size_client chi extra set_server in
-    let pts = EP.evalPts good_m in
-    let chi_client = EP.take good_m chi in
-    let to_send_by_client = S.reconcile size_client chi_client set_server pts in
+    let good_m, cfsNum, cfsDenom = EP.findM_server size_client chi extra set_server in
+    let to_send_by_client = S.reconcile cfsNum cfsDenom in
     Lwt_io.write_value oc to_send_by_client  >>= fun () ->
     Lwt_io.read_value ic >>= fun (msg, orig_hash) ->
     let current_pos = ref 0 in

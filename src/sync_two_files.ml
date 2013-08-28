@@ -46,17 +46,24 @@ struct
     let info_client = partition client hash_function in
     let info_server = partition server hash_function in
     let set1, full_info_client = SC.construct_full_info info_client in
-    let hashes_server = Signature.commit_info info_server db in 
+    let hashes_server = Signature.commit_info info_server db in
     let set2 = SC.construct hashes_server in
     let () = Printf.printf "Looking for m.\n%!" in
-    let m = EP.findM set1 set2 in
+    let size_1 = List.length set1 in
+    let size_2 = List.length set2 in
+    let delta = size_1 - size_2 in
+    let init_max, k = EP.get_max_vals size_1 size_2 in
+    let eval_pts = EP.evalPts init_max in
+    let rat_vals = S.get_rational_values set1 set2 eval_pts in
+    let extra_pts = EP.extraEvalPts k in
+    let actual_vals = S.get_rational_values set1 set2 extra_pts in
+    let m, cfs_num, cfs_denom = EP.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "Found m: %i.\n%!" m in
-    let pts = EP.evalPts m in
-    let m1 = List.length set1 in
-    let () = Printf.printf "Evaluating the characteristic polynomial of set1.\n%!" in
-    let chi_1 = List.map (S.CharPoly.evalCharPoly set1) pts in
-    let () = Printf.printf "Reconciling the sets.\n%!" in
-    let to_send_by_1 = S.reconcile m1 chi_1 set2 pts in
+    let to_send_by_1 =
+      if m = 0
+      then []
+      else S.reconcile cfs_num cfs_denom
+    in
     let () = Printf.printf "Reconciliation done. %i blocks of set1 are missing.\n%!" (List.length to_send_by_1) in
     let element_or_original i (el, hash, begin_pos, size, file) =
       if List.mem el to_send_by_1
@@ -172,27 +179,27 @@ else print_string "not the same.\n" *)
 
 (* Testen voor fisher.txt *)
 (*let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in 
+let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in
 let () = Printf.printf "========================================\n%!" in
 let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in 
+let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in
 let () = Printf.printf "========================================\n%!" in
 let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in *)
+let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in
 let () = Printf.printf "========================================\n%!" in
 let outfile4 = "/home/spare/Documents/Output/test4" in
 let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
-print_string "Done.\n"
+print_string "Done.\n" *)
 
 
 (* Testen voor big.bmp *)
 
 (*module Field = FiniteField.Make(struct
   let w = 13
-end) 
+end)
 
 module Sync = Syncing(Field) ;; *)
 
-(*let outfile = "/home/spare/Documents/Output/test3" in
+let outfile = "/home/spare/Documents/Output/test3" in
 let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
-print_string "Done.\n" *)
+print_string "Done.\n"

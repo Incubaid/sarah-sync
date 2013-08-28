@@ -46,6 +46,23 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
         then exp (square a) (i/2)
         else mult (exp (square a) (i/2)) a
       end
+ (* let exp a i = 
+    let rec loop acc el j =
+      if j = 0
+      then acc
+      else 
+        begin
+          let sq = mult el el in
+          let j' = j lsr 1 in
+          let acc' = 
+            if j land 1 = 0 (* Even *)
+            then acc
+            else mult acc el
+          in
+          loop acc' sq j'
+        end
+    in
+    loop one a i *)
   let primEl = 2
   let print = print_int
   let eq = (=)
