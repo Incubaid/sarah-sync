@@ -13,6 +13,7 @@ struct
   let is_zero (pol : polynom) =
     List.for_all ((=) F.zero) (Array.to_list pol)
 
+
   (* Degree of a polynomial. Highest coefficient different from zero *)
   let get_degree (pol : polynom) =
     let rec aux i =
@@ -36,7 +37,7 @@ struct
     while !count_a >= degree_b do
       let quot = F.div remainder.(!count_a) pol_b.(degree_b) in
       let adapt_remainder i el =
-        if ( i < !count_a - degree_b || i > !count_a - 1 )
+        if ( i < !count_a - degree_b || i > !count_a  - 1  )
         then ()
         else
           begin
@@ -48,7 +49,7 @@ struct
       quotient.(!count_a - degree_b) <- quot ;
       count_a := pred (!count_a)
     done ;
-    ( quotient, Array.sub remainder 0 degree_b )      (* Return the remainder *)
+    ( quotient, Array.sub remainder 0 degree_b )
 
 
   (* Make a polynom monic, by dividing out the leading coefficient *)
@@ -77,47 +78,4 @@ struct
     in
     make_monic result
 
-
 end
-
-
-(* Testing *)
-(*
-  module Field = struct
-  type t = float
-  let zero = 0.
-  let one = 1.
-  let plus =(+.)
-  let min = (-.)
-  let mult = ( *. )
-  let div = (/.)
-  let exp a i = a ** (float_of_int i)
-  let primEl = 1.
-  let print = print_float
-  let eq = (=)
-  let wrap = float_of_int
-  let w = 0
-  let q = 0
-  end *)
-
-module Field = GF128
-
-module GC = Gcd(Field)
-
-(*let pol1 =
-  let pol1' = [|27 ; 10; 1|] in
-  Array.map Field.wrap pol1'
-
-
-  let pol2 =
-  let pol2' = [|9 ; 1|] in
-  Array.map Field.wrap pol2'  ;;
-
-  let quot,r = GC.divide pol1 pol2 in
-  let g = GC.gcd pol1 pol2 in
-  Array.iter (fun el -> (Field.print el ; print_string " ")) quot ;
-  print_newline () ;
-  Array.iter (fun el -> (Field.print el ; print_string " ")) r ;
-  print_newline () ;
-  Array.iter (fun el -> (Field.print el ; print_string " ")) g ;
-  print_newline () ; *)
