@@ -9,6 +9,23 @@ struct
   type polynom = element array (* Coefficients *)
   type roots = element list    (* Roots *)
 
+  (* Extra function *)
+  let is_zero (pol : polynom) =
+    List.for_all ((=) F.zero) (Array.to_list pol)
+
+
+  (* Degree of a polynomial. Highest coefficient different from zero *)
+  let get_degree (pol : polynom) =
+    let rec aux i =
+      if (pol.(i) <> F.zero || i = 0)
+      then i
+      else aux (i-1)
+    in
+    if is_zero pol
+    then 0
+    else aux (Array.length pol - 1)
+
+
   (* Chien-search algorithm. Gammas overwrite the coefficient-array.
      Coefficients should be ordered according to ascending powers of x. *)
   let chienSearch (coeffs : polynom) =
@@ -30,10 +47,13 @@ struct
     done ;
     !roots
 
+
+
   (* Chien-search update. Counts roots, so a the procedure can terminate when all roots are found. *)
   let chienSearch2 (coeffs : polynom) =
-    let t = Array.length coeffs - 1 in (* Degree of the polynom *)
-    let () = Printf.printf "Starting Chien search. Polynomial is of size %i.\n%!" t in
+   (* let t = Array.length coeffs - 1 in *)(* Degree of the polynom *)
+    let t = get_degree coeffs in
+    let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" t in
     let roots = ref ([] : roots) in
     let foundRoot root =
       let () = Printf.printf "Found root. %i already found.\n%!" (List.length !roots) in
