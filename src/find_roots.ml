@@ -31,7 +31,17 @@ struct
   let equal_pols (pol1 : polynom) (pol2 : polynom) =
     let d1 = G.get_degree pol1 in
     let d2 = G.get_degree pol2 in
-    d1 = d2 && (Array.sub pol1 0 (d1 + 1) = Array.sub pol2 0 (d2 + 1))
+    let b = (d1 = d2) in
+    let rec loop c i =
+      if c && i <= d1
+      then
+        begin
+          let c' = c && (pol1.(i) = pol2.(i)) in
+          loop c' (i + 1)
+        end
+      else c
+    in
+    loop b 0
 
 
   (* Verify whether polynomial is linear *)
@@ -57,6 +67,7 @@ struct
   (* Find all roots of a polynomial, using Tr(b.x). *)
   let roots (pol : polynom) =
     let rec aux rts p =
+      Printf.printf "Polynomial has degree %i.\n%!" (G.get_degree p) ;
       if G.get_degree p = 0
       then rts
       else
@@ -75,7 +86,9 @@ struct
               else
                 begin
                   let rec factorize f b =
+                    Printf.printf "Computing gcd.\n%!" ;
                     let p1 = G.gcd f (trace_shift b) in
+                    Printf.printf "Computing gcd done.\n%!" ;
                     if (G.get_degree p1 = 0 && p1.(0) = F.one) || equal_pols p1 f   (* No good b *)
                     then
                       begin
@@ -95,5 +108,6 @@ struct
         end
     in
     aux [] pol
+
 
 end

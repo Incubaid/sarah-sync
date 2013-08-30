@@ -5,7 +5,7 @@ open FiniteField
 open Find_roots
 
 module Field = FiniteField.Make(struct
-  let w = 10
+  let w = 13
 end)
 
 module RF = Root_finder(Field)
@@ -20,17 +20,18 @@ let test_roots () =
   let fortyfive = mult (wrap 5) (wrap 9) in
   let fourteen =  plus (wrap 5) (wrap 9) in
   let tests = [
-    [|one ; zero ; one|] , [ one ; one]  ;
-    [|one ; zero ; zero|] , []   ;
-    [|zero ; one ; zero ; one|] ,[zero ; one ; one]  ;
-    [|zero ; wrap 5 ; one|], [zero ; wrap 5] ;
-    [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5 ; wrap 5] ;
-    [|zero ; twentyseven ; twelve ; one|] , [zero ; wrap 3 ; wrap 9] ;
-    [|twentyseven ; thirtynine; thirteen ; one|] , [wrap 1 ; wrap 3 ; wrap 9] ;
-    [|mult fortyfive (wrap 2); mult fourteen (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9]
+    [|one ; zero ; one|] , [ one ; one], "test1"  ;
+    [|one ; zero ; zero|] , [], "test2"   ;
+    [|zero ; one ; zero ; one|] ,[zero ; one ; one], "test3"  ;
+    [|zero ; wrap 5 ; one|], [zero ; wrap 5], "test4" ;
+    [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5 ; wrap 5], "test5" ;
+    [|zero ; twentyseven ; twelve ; one|] , [zero ; wrap 3 ; wrap 9], "test6" ;
+    [|twentyseven ; thirtynine; thirteen ; one|] , [wrap 1 ; wrap 3 ; wrap 9], "test7" ;
+    [|mult fortyfive (wrap 2); mult fourteen (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9], "test8"
   ]
   in
-  let test_one (poly, rts) =
+  let test_one (poly, rts, id) =
+    Printf.printf "Performing %s.\n%!" id ;
     let answer = RF.roots poly in
     let msg = Printf.sprintf "Incorrect roots." in
     OUnit.assert_equal (List.sort compare answer) (List.sort compare rts) ~msg
