@@ -16,7 +16,7 @@ struct
       if b && i >= 0
       then
         begin
-          let b' = b && (pol.(i) = F.zero) in
+          let b' = b && (F.eq pol.(i) F.zero) in
           loop b' (i - 1)
         end
       else b, (i + 1) (* i + 1: last index that held a zero *)
@@ -67,7 +67,7 @@ struct
       begin
         let c = denom.(0) in
         let rem = [| F.zero |] in
-        if c = F.one
+        if F.eq c F.one
         then num , rem
         else
           begin
