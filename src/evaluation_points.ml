@@ -37,17 +37,24 @@ struct
 
   (* Get the first n elements of a list *)
   let take n list =
-    let rec loop acc i =
-      if i = n
-      then acc
-      else
-        begin
-          let acc' = (List.nth list i) :: acc in
-          loop acc' (i + 1)
-        end
-    in
-    List.rev (loop [] 0)
-
+    if List.length list < n
+    then failwith "Invalid subset-length in method take."
+    else
+      begin
+        let rec loop curr acc i =
+          match curr with
+          | [] -> acc
+          | x :: xs ->
+            if i = n
+            then acc
+            else 
+              begin
+                let acc' = x :: acc in
+                loop xs acc' (i + 1)
+              end
+        in
+        List.rev (loop list [] 0)
+      end
 
   (* Determine the maximal value of m and the maximum number of extra evaluation points *)
   let get_max_vals size_1 size_2 =
