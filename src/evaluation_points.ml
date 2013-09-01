@@ -6,8 +6,9 @@ open Set_reconciliation
 module EvaluationPts =
   functor (F : FINITEFIELD) ->
 struct
+  open F
 
-  type element = F.t
+  type element = t
 
   exception Unable_to_find_good_m
 
@@ -15,22 +16,21 @@ struct
 
   (* Produce a given number of evaluation points. These will be: [q-1, q-2, ...] *)
   let evalPts m =
-    let q = F.q in
     let rec getPoints start len =
       if len = 0
       then []
-      else F.wrap start :: (getPoints (start - 1) (len - 1))
+      else wrap start :: (getPoints (start - 1) (len - 1))
     in
     getPoints (q - 1) m
 
   (* Determine extra evaluation points, used in the function to determine an upper bound on m.
      k: number of extra points requested. Point will be: [2^(w-1) + 1, 2^(w-1) + 2, ...] *)
   let extraEvalPts k =
-    let first = (1 lsl (F.w - 1)) + 1 in
+    let first = (1 lsl (w - 1)) + 1 in
     let rec getPoints start len =
       if len = 0
       then []
-      else F.wrap start :: (getPoints (start + 1) (len - 1))
+      else wrap start :: (getPoints (start + 1) (len - 1))
     in
     getPoints first k
 
@@ -108,10 +108,10 @@ struct
                   try
                     let () = Printf.printf "Considering m: %i. Max is %i\n%!" good_min max in
                     let cfs_num, cfs_denom = S.interpolation_B (take good_min eval_pts) (take good_min rat_vals) delta in
-                    let ourNumVals = List.map (S.evaluate_pol cfs_num) extra_pts in
-                    let ourDenomVals = List.map (S.evaluate_pol cfs_denom) extra_pts in
-                    let our_vals = List.map2 F.div ourNumVals ourDenomVals in
-                    let ok = List.for_all2 F.eq actual_vals our_vals in
+                    let ourNumVals = List.map (S.P.evaluate_pol cfs_num) extra_pts in
+                    let ourDenomVals = List.map (S.P.evaluate_pol cfs_denom) extra_pts in
+                    let our_vals = List.map2 (/:) ourNumVals ourDenomVals in
+                    let ok = List.for_all2 (=:) actual_vals our_vals in
                     if ok
                     then
                       (good_min , cfs_num , cfs_denom)
@@ -187,10 +187,10 @@ struct
                     let extraPts = extraEvalPts k in
                     let actual_chi_1 = take k extra1 in
                     let actualVals = S.evalCharPols actual_chi_1 s2 extraPts in
-                    let ourNumVals = List.map (S.evaluate_pol cfs_num) extraPts in
-                    let ourDenomVals = List.map (S.evaluate_pol cfs_denom) extraPts in
-                    let ourVals = List.map2 F.div ourNumVals ourDenomVals in
-                    let ok = List.for_all2 F.eq actualVals ourVals in
+                    let ourNumVals = List.map (S.P.evaluate_pol cfs_num) extraPts in
+                    let ourDenomVals = List.map (S.P.evaluate_pol cfs_denom) extraPts in
+                    let ourVals = List.map2 (/:) ourNumVals ourDenomVals in
+                    let ok = List.for_all2 (=:) actualVals ourVals in
                     if ok
                     then
                       (good_min, cfs_num, cfs_denom)

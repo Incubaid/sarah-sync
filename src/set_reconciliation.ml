@@ -4,30 +4,21 @@ open FiniteField
 open Characteristic_polynomial
 open Interpolation
 open Chien_search
+open Polynom
 
 module SetReconciliation =
   functor  (F : FINITEFIELD) ->
 struct
-  type element = F.t
+  open F
+
+  type element = t
   type set = element list
 
   module CharPoly = CharPoly(F)
   module InterPol = Interpolation(F)
 
   module Chien = Chien(F)
-
-  (* Evaluate a polynom in a given point, using Horner's rule *)
-  let evaluate_pol (coeffs : element array) (pnt : element) =
-    let rec loop i acc =
-      if i = -1
-      then acc
-      else
-        begin
-          let acc' = F.plus (F.mult acc pnt) coeffs.(i) in
-          loop (i - 1) acc'
-        end
-    in
-    loop (Array.length coeffs - 1) F.zero
+  module P = Polynom(F)
 
 
   (* Evaluation of the characteristic polynomials. Returns the ratios. *)
@@ -59,11 +50,11 @@ struct
 
   (* Reconciliation. Ensure that the roots in numerator and denominator are all different. *)
   let reconcile cfs_num cfs_denom =
-    let roots_num = Chien.chienSearch2 cfs_num in
+    let roots_num = Chien.chienSearch cfs_num in
     let () = Printf.printf "Extracting proper roots.\n%!" in
     let is_proper_root root =
-      let eval = evaluate_pol cfs_denom root in
-      eval <> F.zero
+      let eval = P.evaluate_pol cfs_denom root in
+      not (eval =: zero)
     in
     let result = List.filter is_proper_root roots_num in
     Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;

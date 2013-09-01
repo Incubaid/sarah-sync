@@ -12,13 +12,13 @@ module RF = Root_finder(Field)
 
 let test_roots () =
   let open Field in
-  let twentyfive = mult (wrap 5) (wrap 5) in
-  let twelve = plus (wrap 9) (wrap 3) in
-  let twentyseven = mult (wrap 9) (wrap 3) in
-  let thirteen = plus twelve one in
-  let thirtynine = plus twentyseven twelve in
-  let fortyfive = mult (wrap 5) (wrap 9) in
-  let fourteen =  plus (wrap 5) (wrap 9) in
+  let twentyfive = (wrap 5) *: (wrap 5) in
+  let twelve = (wrap 9) +: (wrap 3) in
+  let twentyseven = (wrap 9) *: (wrap 3) in
+  let thirteen = twelve +: one in
+  let thirtynine = twentyseven +: twelve in
+  let fortyfive = (wrap 5) *: (wrap 9) in
+  let fourteen = (wrap 5) +: (wrap 9) in
   let tests = [
     [|one ; zero ; one|] , [ one ; one], "test1"  ;
     [|one ; zero ; zero|] , [], "test2"   ;
@@ -27,7 +27,7 @@ let test_roots () =
     [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5 ; wrap 5], "test5" ;
     [|zero ; twentyseven ; twelve ; one|] , [zero ; wrap 3 ; wrap 9], "test6" ;
     [|twentyseven ; thirtynine; thirteen ; one|] , [wrap 1 ; wrap 3 ; wrap 9], "test7" ;
-    [|mult fortyfive (wrap 2); mult fourteen (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9], "test8"
+    [|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9], "test8"
   ]
   in
   let test_one (poly, rts, id) =

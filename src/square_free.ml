@@ -6,7 +6,9 @@ open Gcd
 module Square_Free =
   functor (F : FINITEFIELD) ->
 struct
-  type element = F.t
+  open F
+
+  type element = t
   type polynom = element array
 
   module G = Gcd(F)
@@ -16,7 +18,7 @@ struct
     Array.init (Array.length pol - 1)
       (
         fun i ->
-          F.mult (F.wrap (i+1)) pol.(i + 1)
+          (wrap (i+1)) *: pol.(i + 1)
       )
 
   (* Verify whether a polynomial is square-free.
@@ -24,7 +26,7 @@ struct
   let is_square_free (pol : polynom) =
     let pol' = derivative pol in
     let g = G.gcd pol pol' in
-    (G.get_degree g = 0) && (g.(0) = F.one)
+    (G.get_degree g = 0) && (g.(0) =: one)
 
   (* Make polynomial square-free *)
   let square_free (pol : polynom) =
@@ -34,7 +36,7 @@ struct
       print_string "GCD: " ;
       Array.iter (fun el -> (F.print el ; print_string " ")) g;
       print_newline ();
-      if (G.get_degree g = 0) && (g.(0) = F.one)
+      if (G.get_degree g = 0) && (g.(0) =: one)
       then f
       else
         begin
@@ -72,7 +74,7 @@ module SF = Square_Free(Field);;
 
 
 let open Field in
-let twentyfive = mult (wrap 5) (wrap 5) in
+let twentyfive = (wrap 5) *: (wrap 5) in
 (*let pol1 = [|Field.wrap 9 ; Field.wrap (-24) ; Field.wrap 22 ; Field.wrap (-8) ; Field.one|] in (* Dubbele wortel 1 en 3 *) *)
 let pol1 = [|Field.wrap 1 ; Field.wrap 0 ; Field.wrap 1 |] in (* Dubbele wortel 1 *)
 let pol2 = [|zero ; twentyfive ; zero ; one |] in

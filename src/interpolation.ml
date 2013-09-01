@@ -6,7 +6,9 @@ open Matrices
 module Interpolation =
   functor  (F : FINITEFIELD) ->
 struct
-  type element = F.t
+  open F
+
+  type element = t
 
   exception Delta_and_m_different_parity
 
@@ -25,13 +27,13 @@ struct
           Array.init (m + 1)
             (fun j ->
               if j < d1
-              then F.exp (List.nth points i) j
+              then exp (List.nth points i) j
               else
                 begin
                   if j < m
-                  then F.mult (List.nth values i) (F.exp (List.nth points i) (j - d1))
-                  else F.min ( F.mult (List.nth values i) (F.exp ( List.nth points i) d2) )
-                    ( F.exp (List.nth points i) d1 )
+                  then (List.nth values i) *: (exp (List.nth points i) (j - d1))
+                  else ( (List.nth values i) *: (exp ( List.nth points i) d2) ) -:
+                    ( exp (List.nth points i) d1 )
                 end
             )
         in
@@ -48,12 +50,12 @@ struct
       ( fun i ->
         if i < d1
         then solution.(i)
-        else F.one ) in    (* Coefficients numerator *)
+        else one ) in    (* Coefficients numerator *)
     let cfsDenom = Array.init (d2 + 1)
       ( fun i ->
         if i < d2
         then solution.(d1 + i)
-        else F.one ) in    (* Coefficients denominator *)
+        else one ) in    (* Coefficients denominator *)
     cfsNum , cfsDenom
 
 end
