@@ -5,12 +5,13 @@ open FiniteField
 open Evaluation_points
 open Set_reconciliation
 open Construct_set
+open Read_file_network
 
 module Sync_with_network =
   functor (F : FINITEFIELD) ->
 struct
 
-  type filename = string
+  type filename = string 
 
   module S = SetReconciliation(F)
   module EP = EvaluationPts(F)
@@ -24,16 +25,6 @@ struct
       Lwt.return (hash_function s)
     in
     Lwt_io.with_file ~mode:Lwt_io.input file hash
-
-
-  (* Get the block from the specified location *)
-  let get_block begin_pos size file =
-    let start = Int64.of_int begin_pos in
-    let get_it ic =
-      Lwt_io.set_position ic start >>= fun () ->
-      Lwt_io.read ~count:size ic
-    in
-    Lwt_io.with_file ~mode:Lwt_io.input file get_it
 
 
   (* ====== CLIENT ====== *)
@@ -90,7 +81,7 @@ struct
 
   (* Syncing with the server *)
   let sync_with_server addr (file : filename) partition hash_function new_location =
-    let info_client = partition file hash_function in
+    partition file hash_function >>= fun info_client ->
     let set, full_info_client = SC.construct_full_info info_client in
     let l = List.length set in
     Lwt_io.with_connection addr
@@ -145,6 +136,7 @@ struct
     let to_send_by_client = S.reconcile cfsNum cfsDenom in
     Lwt_io.write_value oc to_send_by_client  >>= fun () ->
     Lwt_io.read_value ic >>= fun (msg, orig_hash) ->
+    let number_sent = ref (List.length to_send_by_client) in    (* Counting the number of blocks that has to be sent *)
     let current_pos = ref 0 in
     let decode m =
       match m with
@@ -163,6 +155,7 @@ struct
           Lwt_io.read_value ic >>= fun block ->
           let new_pos = update_database db hash_function block !current_pos location in
           current_pos := new_pos ;
+          number_sent := succ (!number_sent) ;   (* Extra block has been sent *)
           Lwt.return block
     in
     Lwt_list.map_s decode msg >>= fun content ->
@@ -173,8 +166,8 @@ struct
     control_hash location hash_function >>= fun new_hash ->
     (
       if new_hash <> orig_hash
-      then Lwt_io.printlf "Reconstruction not correct.%!"
-      else Lwt_io.printlf "Reconstruction correct.%!"
+      then Lwt_io.printlf "Reconstruction not correct. %i out of %i blocks have been sent.%!" !number_sent size_client
+      else Lwt_io.printlf "Reconstruction correct. %i out of %i blocks have been sent.%!" !number_sent size_client
     ) >>= fun () ->
     Lwt_io.write_value oc "Finished\n" >>= fun () ->
     Lwt_io.flush oc

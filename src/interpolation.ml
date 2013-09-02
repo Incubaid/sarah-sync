@@ -14,6 +14,7 @@ struct
 
   module M = Matrix(F)
 
+
   (* System for the interpolation.
      m = number of evalution points,  delta = |set1| - |set2| *)
   let constructSystem (points : element list) (values : element list) m delta =
@@ -23,29 +24,78 @@ struct
     then raise Delta_and_m_different_parity
     else
       begin
-        let makeRow i =
-          Array.init (m + 1)
-            (fun j ->
-              if j < d1
-              then exp (List.nth points i) j
-              else
+        let sys = Array.make_matrix m (m + 1) one in
+        let rec loop pts vals r =
+          match (pts, vals) with
+          | [], []  -> ()
+          | x :: xs, f :: fs  ->
+            let rec fill_in c1 c2 curr =
+              if d2 <= d1
+              then 
                 begin
-                  if j < m
-                  then (List.nth values i) *: (exp (List.nth points i) (j - d1))
-                  else ( (List.nth values i) *: (exp ( List.nth points i) d2) ) -:
-                    ( exp (List.nth points i) d1 )
+                  if c2 < d1 + d2   (* Not yet last column *)
+                  then 
+                    begin
+                      let next = curr *: x in
+                      let () = sys.(r).(c1) <- curr in
+                      let () = sys.(r).(c2) <- f *: curr in
+                      fill_in (c1 + 1) (c2 + 1) next
+                    end
+                  else 
+                    begin
+                      if c2 = d1 + d2 then sys.(r).(d1 + d2) <- f *: curr ; (* Intermediate value last column *)
+                      if c1 < d1
+                      then 
+                        begin
+                          let next = curr *: x in
+                          let () = sys.(r).(c1) <- curr in
+                          fill_in (c1 + 1) (c2 + 1) next
+                        end
+                      else
+                        sys.(r).(d1 + d2) <- sys.(r).(d1 + d2) -: curr
+                    end
                 end
-            )
+              else 
+                begin
+                  if c1 < d1   (* Not yet last column *)
+                  then 
+                    begin
+                      let next = curr *: x in
+                      let () = sys.(r).(c1) <- curr in
+                      let () = sys.(r).(c2) <- f *: curr in
+                      fill_in (c1 + 1) (c2 + 1) next
+                    end
+                  else 
+                    begin
+                      if c1 = d1 then sys.(r).(d1 + d2) <- curr ; (* Intermediate value last column *)
+                      if c2 < d1 + d2
+                      then 
+                        begin
+                          let next = curr *: x in
+                          let () = sys.(r).(c2) <- f *: curr in
+                          fill_in (c1 + 1) (c2 + 1) next
+                        end
+                      else
+                        sys.(r).(d1 + d2) <- (f *: curr) -: sys.(r).(d1 + d2)
+                    end
+
+                end
+            in
+            fill_in 0 d1 one ;
+            loop xs fs (r + 1)
+          | _, _ -> failwith "Different number of points and values."
         in
-        ( Array.init m makeRow , d1 , d2)
+        loop points values 0 ;
+        ( sys , d1 , d2)
       end
+
 
   (* Actual interpolation. Solves the system with Gaussian elimination. *)
   let interpolate (points : element list) (values : element list) m delta =
     let () = Printf.printf "Constructing system for interpolation.\n%!" in
-    let system, d1, d2 = constructSystem points values m delta in
+    let sys, d1, d2 = constructSystem points values m delta in
     let () = Printf.printf "Solving system for interpolation.\n%!" in
-    let solution =  M.solveSystem system in
+    let solution =  M.solveSystem sys in
     let cfsNum = Array.init (d1 + 1)
       ( fun i ->
         if i < d1

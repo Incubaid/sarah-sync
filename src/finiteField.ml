@@ -14,6 +14,7 @@ module type F = sig
   val (-:) : t -> t -> t
   val ( *: ) : t -> t -> t
   val (/:) : t -> t-> t
+  val square : t -> t
   val exp : t -> int -> t   (* Exponentiation *)
   val primEl : t
   val print : t-> unit
@@ -36,12 +37,12 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
   let (-:) = (lxor)
   let ( *: ) a b = Galois.single_multiply a b P.w
   let (/:) a b = Galois.single_divide a b P.w
+  let square x = x *: x
   let rec exp a i =
     if i = 0
     then one
     else
       begin
-        let square x = x *: x in
         if i land 1 = 0  (* Even *)
         then exp (square a) (i/2)
         else (exp (square a) (i/2)) *: a

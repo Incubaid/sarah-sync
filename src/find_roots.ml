@@ -13,21 +13,14 @@ struct
 
   module G = Gcd(F)
 
+  (* The largest basis element *)
+  let largest = exp primEl (w - 1)
 
-  (* Get the 'next' element from the basis (1, alpha, alpha^2, ..., alpha^(w-1))  *)
+  (* Get the 'next' element from the basis (1, alpha, alpha^2, ..., alpha^(w-1)) *)
   let next_basis_el current =
-    if current =: exp primEl (w - 1)
+    if current =: largest
     then one
     else current *:  primEl
-
-
-  (* Trace function evaluated in b.x . Tr(b.x) = (b.x) + (bx)^2 + ... (bx)^(2^(w-1)) *)
-  let trace_shift b =
-    let pol = Array.make ((1 lsl (w - 1)) + 1) zero in
-    for i = 0 to w - 1 do
-      pol.(1 lsl i) <- exp b (1 lsl i)
-    done ;
-    pol
 
 
   (* Verify equality of polynomials *)
@@ -53,7 +46,7 @@ struct
 
 
   (* Get the root from a monic linear polynomial *)
-  let get_root (pol : polynom) = 
+  let get_root (pol : polynom) =
     let leading = pol.(1) in
     if leading =: one
     then pol.(0)
@@ -69,6 +62,111 @@ struct
   let divide_by_x (pol : polynom) =
     let d = G.P.get_degree pol in
     Array.sub pol 1 d
+
+
+  (* Trace function Tr (x) *)
+  let init_trace () =
+    let tr = Array.make ((1 lsl (w - 1)) + 1) zero in
+    for i = 0 to w - 1 do
+      tr.(1 lsl i) <- one
+    done ;
+    tr
+
+
+  (* Update trace function to be evaluated in the next basis element.
+     Returns this basis element, for future reference.*)
+  let update_trace trace b =
+    let b' = next_basis_el b in
+    if b' = one
+    then
+      begin
+        for i = 0 to w - 1 do
+          trace.(1 lsl i) <- one
+        done;
+        b'
+      end
+    else
+      begin
+        let rec loop i pow =
+          if i = w
+          then ()
+          else
+            begin
+              let pow' = square pow in
+              let pos = 1 lsl i in
+              trace.(pos) <- trace.(pos) *: pow ;
+              loop (i + 1) pow'
+            end
+        in
+        loop 0 primEl ;
+        b'
+      end
+
+
+  (* Calculate Tr(el) *)
+  let trace el =
+    let rec loop acc i prev =
+      if i = w
+      then acc
+      else
+        begin
+          let prev' = square prev in
+          let acc' = acc +: prev' in
+          loop acc' (i + 1) prev'
+        end
+    in
+    loop el 1 el
+
+
+  (* Find element k with Tr(k) = one *)
+  let k =
+    let rec loop curr =
+      if trace curr =: one
+      then curr
+      else
+        begin
+          let curr' = curr *: primEl in
+          loop curr'
+        end
+    in
+    loop one
+
+
+  (* Verify whether polynomial is of the form ax^2 + bx + c, with b not zero *)
+  let is_quadratic pol =
+    G.P.get_degree pol == 2 && pol.(1) != zero
+
+
+  (* Find roots of quadratic equation ax^2 + bx + c = 0 *)
+  let quadratic pol =
+    let a = pol.(2) in
+    let b = pol.(1) in
+    let c = pol.(0) in
+    let delta = (a *: c) /: (b *: b) in
+    if trace delta =: zero     (* Two different roots *)
+    then
+      begin
+        let sol_1 =            (* s = k.delta^2 + (k+k^2).delta^4 +...+ (k+k^2+...+k^(2^(w-2))).delta^(2^(w-1)) *)
+          let rec loop k_sum last_k pow acc i =
+            if i = w
+            then acc
+            else
+              begin
+                let acc' = acc +: (k_sum *: pow) in
+                let pow' = square pow in
+                let last_k' = square last_k in
+                let k_sum' = k_sum +: last_k' in
+                loop k_sum' last_k' pow' acc' (i + 1)
+              end
+          in
+          loop k k (square delta) zero 1
+        in
+        let sol_2 = sol_1 +: one in
+        let root_1 = (b /: a) *: sol_1 in
+        let root_2 = (b /: a) *: sol_2 in
+        [root_1 ; root_2]
+      end
+    else []
 
 
   (* Find all roots of a polynomial, using Tr(b.x). *)
@@ -91,26 +189,34 @@ struct
                   rts' @ (aux [] p')
                 end
               else
-                begin
-                  let rec factorize f b =
-                    Printf.printf "Computing gcd.\n%!" ;
-                    let p1 = G.gcd f (trace_shift b) in
-                    Printf.printf "Computing gcd done.\n%!" ;
-                    if (G.P.get_degree p1 = 0 && p1.(0) =: one) || equal_pols p1 f   (* No good b *)
-                    then
-                      begin
-                        let new_b = next_basis_el b  in
-                        factorize f new_b
-                      end
-                    else
-                      begin
-                        let p2, _ = G.divide f p1 in
-                        ( p1, p2 )
-                      end
-                  in
-                  let p1, p2 = factorize p one in
-                  rts @ (aux [] p1) @ (aux [] p2) ;
-                end
+                if is_quadratic p
+                then
+                  begin
+                    let roots = quadratic p in
+                    roots @ rts
+                  end
+                else
+                  begin
+                    let trace = init_trace () in (* Tr(x) *)
+                    let rec factorize f b =
+                      Printf.printf "Computing gcd.\n%!" ;
+                      let p1 = G.gcd f trace in
+                      Printf.printf "Computing gcd done.\n%!" ;
+                      if (G.P.get_degree p1 = 0 && p1.(0) =: one) || equal_pols p1 f   (* No good b *)
+                      then
+                        begin
+                          let b' = update_trace trace b  in
+                          factorize f b'
+                        end
+                      else
+                        begin
+                          let p2, _ = G.divide f p1 in
+                          ( p1, p2 )
+                        end
+                    in
+                    let p1, p2 = factorize p one in
+                    rts @ (aux [] p1) @ (aux [] p2) ;
+                  end
             end
         end
     in

@@ -2,6 +2,8 @@
 
 open Network_interaction
 open FiniteField
+open Read_file_network
+open Lwt
 
 
 module Field = FiniteField.Make(struct
@@ -21,7 +23,7 @@ let hash_function = function l ->
 (* Test fischer *)
 (* let partition_function =
   let size = 10 in
-  Read_file.blocks_using_whitespace ~size *)
+  blocks_using_whitespace ~size *)
 
 
 (* let file_client = "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt"
@@ -32,7 +34,7 @@ let destination = "/home/spare/Documents/Output/netwerk.txt" *)
 (* Test big *)
 let partition_function =
   let size = 4000 in
-  Read_file.blocks ~size
+  blocks ~size
 
 let file_client = "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp"
 let file_server = "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp"
@@ -45,9 +47,15 @@ let () =
   then
     begin
       let db = Signature.init_database () in   (* Building database for testing *)
-      let info_server = partition_function file_server hash_function in
+      (*let info_server = Lwt_main.run (partition_function file_server hash_function) in
       let _ = Signature.commit_info info_server db in
-      Lwt_main.run (N.server soc addr db hash_function)
+      Lwt_main.run (N.server soc addr db hash_function) *)
+      Lwt_main.run 
+        (
+          partition_function file_server hash_function >>= fun info_server ->
+          let _ = Signature.commit_info info_server db in
+          N.server soc addr db hash_function
+        )
     end
   else
     Time.time Lwt_main.run (N.sync_with_server addr file_client partition_function hash_function destination)
