@@ -136,13 +136,14 @@ struct
     let to_send_by_client = S.reconcile cfsNum cfsDenom in
     Lwt_io.write_value oc to_send_by_client  >>= fun () ->
     Lwt_io.read_value ic >>= fun (msg, orig_hash) ->
-    let number_sent = ref (List.length to_send_by_client) in    (* Counting the number of blocks that has to be sent *)
+    let size_sent = ref 0 in    (* Calculating the size of the information has to been sent *)
     let current_pos = ref 0 in
     let decode m =
       match m with
       | Original orig ->
         let new_pos = update_database db hash_function orig !current_pos location in
         current_pos := new_pos ;
+        size_sent := !size_sent + (String.length orig) ;
         Lwt.return orig
       | Hash (hash, i) ->
         let opt = Signature.get_location hash db in
@@ -155,7 +156,7 @@ struct
           Lwt_io.read_value ic >>= fun block ->
           let new_pos = update_database db hash_function block !current_pos location in
           current_pos := new_pos ;
-          number_sent := succ (!number_sent) ;   (* Extra block has been sent *)
+          size_sent := !size_sent + (String.length block) ;
           Lwt.return block
     in
     Lwt_list.map_s decode msg >>= fun content ->
@@ -166,8 +167,8 @@ struct
     control_hash location hash_function >>= fun new_hash ->
     (
       if new_hash <> orig_hash
-      then Lwt_io.printlf "Reconstruction not correct. %i out of %i blocks have been sent.%!" !number_sent size_client
-      else Lwt_io.printlf "Reconstruction correct. %i out of %i blocks have been sent.%!" !number_sent size_client
+      then Lwt_io.printlf "Reconstruction not correct. Size %i has been sent.%!" !size_sent
+      else Lwt_io.printlf "Reconstruction correct. Size %i has been sent.%!" !size_sent
     ) >>= fun () ->
     Lwt_io.write_value oc "Finished\n" >>= fun () ->
     Lwt_io.flush oc
