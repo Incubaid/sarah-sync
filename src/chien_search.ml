@@ -17,7 +17,7 @@ struct
 
   (* Chien-search algorithm.
      Coefficients should be ordered according to ascending powers of x.
-     Counts roots, so a the procedure can terminate when all roots are found. *)
+     Counts roots, so the procedure can terminate when all roots are found. *)
   let chienSearch (coeffs : polynom) =
     let t = P.get_degree coeffs in
     let cst = coeffs.(0) in 

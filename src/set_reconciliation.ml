@@ -4,6 +4,7 @@ open FiniteField
 open Characteristic_polynomial
 open Interpolation
 open Chien_search
+open Find_roots
 open Polynom
 
 module SetReconciliation =
@@ -18,6 +19,7 @@ struct
   module InterPol = Interpolation(F)
 
   module Chien = Chien(F)
+  module BTA = Root_finder(F)
   module P = Polynom(F)
 
 
@@ -27,12 +29,14 @@ struct
     let ratVals = List.map2 CharPoly.quotient chi_1 chi_2 in
     ratVals
 
+
   (* Alternative to the function above: calculates the ratios of the sampled values of the characteristic polynomials directly from the sets. *)
   let get_rational_values (s1 : set) (s2 : set) (eval_pts : element list) =
     let chi_1 = List.map (CharPoly.evalCharPoly s1) eval_pts in
     let chi_2 = List.map (CharPoly.evalCharPoly s2) eval_pts in
     let rat_vals = List.map2 CharPoly.quotient chi_1 chi_2 in
     rat_vals
+
 
   (* Interpolation *)
   let interpolation (m1 : int) (chi_1 : element list) (s2 : set) (evalPts : element list) =
@@ -60,6 +64,28 @@ struct
     Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
     result
 
+
+  (* Reconciliation, with BTA to find the roots *)
+  let reconcile_BTA cfs_num cfs_denom =
+    let roots_num = List.sort compare (BTA.roots cfs_num) in
+    let roots_denom = List.sort compare (BTA.roots cfs_denom) in
+    let () = Printf.printf "Extracting proper roots.\n%!" in
+	let rec find_proper_els list1 list2 proper = 
+	  match list1, list2 with
+	  | (x::xs), (y::ys) ->
+	    if x = y
+            then find_proper_els xs ys proper
+	    else 
+	      begin
+		if x < y 
+		then find_proper_els xs (y::ys) (x::proper)
+		else find_proper_els (x::xs) ys proper
+	      end
+	  | rest1, rest2  -> List.append rest1 proper
+	in 
+    let result = find_proper_els roots_num roots_denom [] in
+    Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
+    result
 
 
 end

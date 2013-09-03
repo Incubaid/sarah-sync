@@ -23,7 +23,19 @@ let test_set_reconc () =
   let test_one (set1, set2, only_set1, id) =
     let () = Printf.printf "============================================\n%!" in
     let () = Printf.printf "Performing %s\n%!" id in
-  (*  let size_1 = List.length set1 in
+  
+    (* Test with Chien search and old findM *)
+    let m = EP1.findM_old_2 set1 set2 in
+    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
+    let pts = EP1.evalPts m in
+    let m1 = List.length set1 in
+    let chi_1 = List.map (S1.CharPoly.evalCharPoly set1) pts in
+    let sols = S1.reconcile m1 chi_1 set2 pts in
+    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ~msg ;
+
+    (* Test with BTA and new findM *)
+    let size_1 = List.length set1 in
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
     let init_max, k = EP1.get_max_vals size_1 size_2 in
@@ -33,19 +45,14 @@ let test_set_reconc () =
     let actual_vals = S1.get_rational_values set1 set2 extra_pts in
     let m, cfs_num, cfs_denom = EP1.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let sols =
+    let sols_BTA = 
       if m = 0
       then []
-      else S1.reconcile_C cfs_num cfs_denom
-    in *)
-    let m = EP1.findM_old_2 set1 set2 in
-    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let pts = EP1.evalPts m in
-    let m1 = List.length set1 in
-    let chi_1 = List.map (S1.CharPoly.evalCharPoly set1) pts in
-    let sols = S1.reconcile m1 chi_1 set2 pts in
-    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols) (List.length only_set1) id in
-    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ~msg
+      else S1.reconcile_D cfs_num cfs_denom
+    in
+    let msg_b = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols_BTA) (List.sort compare only_set1) ~msg:msg_b ;
+
   in
   List.iter test_one
     ( List.map
@@ -90,7 +97,19 @@ let test_set_reconc_bigger () =
   let test_one (set1, set2, only_set1, id) =
     let () = Printf.printf "============================================\n%!" in
     let () = Printf.printf "Performing %s\n%!" id in
-(*    let size_1 = List.length set1 in
+
+    (* Test with Chien and old findM *)
+    let m = EP2.findM_old_2 set1 set2 in
+    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
+    let pts = EP2.evalPts m in
+    let m1 = List.length set1 in
+    let chi_1 = List.map (S2.CharPoly.evalCharPoly set1) pts in
+    let sols = S2.reconcile m1 chi_1 set2 pts in
+    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s.\n" (List.length sols) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ~msg ; 
+
+    (* Test with BTA and new findM *)
+    let size_1 = List.length set1 in
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
     let init_max, k = EP2.get_max_vals size_1 size_2 in
@@ -100,19 +119,14 @@ let test_set_reconc_bigger () =
     let actual_vals = S2.get_rational_values set1 set2 extra_pts in
     let m, cfs_num, cfs_denom = EP2.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let sols =
+    let sols_BTA = 
       if m = 0
       then []
-      else S2.reconcile_C cfs_num cfs_denom
-    in *)
-    let m = EP2.findM_old_2 set1 set2 in
-    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let pts = EP2.evalPts m in
-    let m1 = List.length set1 in
-    let chi_1 = List.map (S2.CharPoly.evalCharPoly set1) pts in
-    let sols = S2.reconcile m1 chi_1 set2 pts in
-    let msgNum = Printf.sprintf "Numerator: found %i elements, needed %i in %s.\n" (List.length sols) (List.length only_set1) id in
-    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1)  ~msg:msgNum
+      else S2.reconcile_D cfs_num cfs_denom
+    in
+    let msg_b = Printf.sprintf "Numerator: found %i elements, needed %i in %s.\n" (List.length sols) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols_BTA) (List.sort compare only_set1) ~msg:msg_b
+
   in
   List.iter test_one
     ( List.map

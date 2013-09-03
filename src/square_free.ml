@@ -26,7 +26,7 @@ struct
   let is_square_free (pol : polynom) =
     let pol' = derivative pol in
     let g = G.gcd pol pol' in
-    (G.get_degree g = 0) && (g.(0) =: one)
+    (G.P.get_degree g = 0) && (g.(0) =: one)
 
   (* Make polynomial square-free *)
   let square_free (pol : polynom) =
@@ -36,7 +36,7 @@ struct
       print_string "GCD: " ;
       Array.iter (fun el -> (F.print el ; print_string " ")) g;
       print_newline ();
-      if (G.get_degree g = 0) && (g.(0) =: one)
+      if (G.P.get_degree g = 0) && (g.(0) =: one)
       then f
       else
         begin

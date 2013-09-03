@@ -43,10 +43,24 @@ struct
             begin
               let diff = deg_n - deg_d in
               let q = num'.(deg_n) /: lead_d in
-              let quot' = q :: quot in
               for i = diff to deg_n do
                 num'.(i) <- num'.(i) -: ( q *: denom.(i - diff) )
               done;
+
+              let quot' =
+                let new_deg = P.get_degree num' in
+                let extra_zrs = 
+                  if new_deg < deg_d   (* Division done *)
+                  then 0 
+                  else deg_n - (P.get_degree num') - 1 in
+                let rec extra i res =
+                  if i = 0
+                  then res
+                  else extra (i - 1) (zero :: res)
+                in
+                extra extra_zrs (q :: quot)
+              in
+
               loop quot'
             end
         in

@@ -172,7 +172,6 @@ struct
   (* Find all roots of a polynomial, using Tr(b.x). *)
   let roots (pol : polynom) =
     let rec aux rts p =
-      Printf.printf "Polynomial has degree %i.\n%!" (G.P.get_degree p) ;
       if G.P.get_degree p = 0
       then rts
       else
@@ -202,11 +201,16 @@ struct
                       Printf.printf "Computing gcd.\n%!" ;
                       let p1 = G.gcd f trace in
                       Printf.printf "Computing gcd done.\n%!" ;
-                      if (G.P.get_degree p1 = 0 && p1.(0) =: one) || equal_pols p1 f   (* No good b *)
+                      if G.P.get_degree p1 = 0 || equal_pols p1 f   (* No good b *)
                       then
                         begin
-                          let b' = update_trace trace b  in
-                          factorize f b'
+                          if b =: largest      (* No b found *)
+                          then ([|zero|] , [|zero|])
+                          else 
+                            begin
+                              let b' = update_trace trace b  in
+                              factorize f b'
+                            end
                         end
                       else
                         begin
@@ -215,7 +219,7 @@ struct
                         end
                     in
                     let p1, p2 = factorize p one in
-                    rts @ (aux [] p1) @ (aux [] p2) ;
+                    rts @ (aux [] p1) @ (aux [] p2)
                   end
             end
         end
