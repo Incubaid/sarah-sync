@@ -20,11 +20,11 @@ let test_chien_search () =
   let fortyfive = (wrap 5) *: (wrap 9) in
   let fourteen =  (wrap 5) +: (wrap 9) in
   let tests = [
-    [|one ; zero ; one|] , [ one ]  ;
+    [|one ; zero ; one|] , [ one ; one ]  ;
     [|one ; zero ; zero|] , []   ;
-    [|zero ; one ; zero ; one|] ,[zero ; one ]  ; 
+    [|zero ; one ; zero ; one|] ,[zero ; one ; one ]  ; 
     [|zero ; wrap 5 ; one|], [zero ; wrap 5] ;
-    [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5] ; 
+    [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5 ; wrap 5] ; 
     [|zero ; twentyseven ; twelve ; one|] , [zero ; wrap 3 ; wrap 9] ;
     [|twentyseven ; thirtynine; thirteen ; one|] , [wrap 1 ; wrap 3 ; wrap 9] ;
     [|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9]
@@ -37,3 +37,7 @@ let test_chien_search () =
   in
   List.iter test_one tests
 
+
+let suite = "Set Reconciliation" >::: [ "test_chien_search" >:: test_chien_search]
+
+let _ = run_test_tt_main suite

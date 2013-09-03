@@ -52,25 +52,8 @@ struct
     InterPol.interpolate eval_pts rat_vals m delta
 
 
-  (* Reconciliation. Ensure that the roots in numerator and denominator are all different. *)
-  let reconcile cfs_num cfs_denom =
-    let roots_num = Chien.chienSearch cfs_num in
-    let () = Printf.printf "Extracting proper roots.\n%!" in
-    let is_proper_root root =
-      let eval = P.evaluate_pol cfs_denom root in
-      not (eval =: zero)
-    in
-    let result = List.filter is_proper_root roots_num in
-    Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
-    result
-
-
-  (* Reconciliation, with BTA to find the roots *)
-  let reconcile_BTA cfs_num cfs_denom =
-    let roots_num = List.sort compare (BTA.roots cfs_num) in
-    let roots_denom = List.sort compare (BTA.roots cfs_denom) in
-    let () = Printf.printf "Extracting proper roots.\n%!" in
-	let rec find_proper_els list1 list2 proper = 
+  (* Extracting proper elements of two lists *)
+  let rec find_proper_els list1 list2 proper = 
 	  match list1, list2 with
 	  | (x::xs), (y::ys) ->
 	    if x = y
@@ -82,7 +65,23 @@ struct
 		else find_proper_els (x::xs) ys proper
 	      end
 	  | rest1, rest2  -> List.append rest1 proper
-	in 
+
+
+  (* Reconciliation. Ensure that the roots in numerator and denominator are all different. *)
+  let reconcile cfs_num cfs_denom =
+    let roots_num = Chien.chienSearch cfs_num in
+    let roots_denom = Chien.chienSearch cfs_denom in
+    let () = Printf.printf "Extracting proper roots.\n%!" in
+    let result = find_proper_els roots_num roots_denom [] in
+    Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
+    result
+
+
+  (* Reconciliation, with BTA to find the roots *)
+  let reconcile_BTA cfs_num cfs_denom =
+    let roots_num = List.sort compare (BTA.roots cfs_num) in
+    let roots_denom = List.sort compare (BTA.roots cfs_denom) in
+    let () = Printf.printf "Extracting proper roots.\n%!" in
     let result = find_proper_els roots_num roots_denom [] in
     Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
     result
