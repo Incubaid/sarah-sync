@@ -4,22 +4,21 @@ open Lwt
 open Camltc
 
 
-(* Converting integer to fixed-length string of length 64. ENOUGH??? *)
+(* Converting integer to fixed-length string of length 64. *)
 let convert_int n = 
   let s = string_of_int n in
   let extra = String.make (64 - String.length s) '*' in
   extra ^ s
 
+
 (* Get list of all the keys in the database *)
 let keys db =
-  let get_keys db = Hotc.transaction db
-    (fun db ->
+  Hotc.transaction db
+    (
+      fun db ->
       let keys = Bdb.range db None true None true (-1) in
-      Lwt.return keys
+      Lwt.return (Array.to_list keys)
     )
-  in
-  let ks = Lwt_main.run (get_keys db) in
-  Array.to_list ks
 
 
 (* Construct the value that will be put in the database. "begin_posssizefile" *)
@@ -34,15 +33,13 @@ let construct_value begin_pos size file =
    Value : "begin_possizefile" *)
 let add hash begin_pos size file db =
   let value = construct_value begin_pos size file in
-  let aux db =
-    Hotc.transaction db
-      (fun db ->
-        let () = Bdb.put db hash value in
-        Lwt.return ()
-      )
-  in
-  Lwt_main.run (aux db)
-
+  Hotc.transaction db
+    (
+      fun db ->
+      let () = Bdb.put db hash value in
+      Lwt.return ()
+    )
+  
 
 (* 'Decode' the information in the database *)
 let decode value =
@@ -58,12 +55,9 @@ let decode value =
 
 (* Get the value corresponding to a given key. (begin_pos, end_pos, file) *)
 let get_location key db =
-  let aux db =
-    Hotc.transaction db
-      (fun db ->
-        let res = Bdb.get db key in
-        Lwt.return res
-      )
-  in
-  let value = Lwt_main.run (aux db) in
-  decode value
+  Hotc.transaction db
+    (
+      fun db ->
+      let res = Bdb.get db key in
+      Lwt.return (decode res)
+    )

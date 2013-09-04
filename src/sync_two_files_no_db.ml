@@ -1,5 +1,5 @@
 (* Syncing of two files.
-   Size of finite field is determined automatically.*)
+   Size of finite field is fixed beforehand.*)
 
 open Read_file_old
 open FiniteField
@@ -10,10 +10,15 @@ open Construct_set
 open Sha1
 
 module Syncing =
+  functor (F : FINITEFIELD) ->
 struct
-
   type filename = string
- 
+
+  module S = SetReconciliation(F)
+  module EP = EvaluationPts(F)
+
+  module SC = Set_constructor(F)
+
   (* Type of messages being sent *)
   type message = Hash of string * int    (* Hash and the block it identifies *)
                  | Original of string
@@ -30,19 +35,9 @@ struct
 
   (* Syncing *)
   let sync (file1 : filename) (file2 : filename) partition hash_function =
-    let k' = 1  in    (* CHANGE THIS *)
     let total_hash = control_hash file1 hash_function in
     let parts1 = partition file1 in
     let parts2 = partition file2 in
-    let f_w = Field_size.get_size (List.length parts1) (List.length parts2) k' in
-    Printf.printf "Using w = %i\n%!" f_w ;
-    let module F = FiniteField.Make(struct
-      let w = f_w
-    end)
-    in
-    let module S = SetReconciliation(F) in
-    let module EP = EvaluationPts(F) in
-    let module SC = Set_constructor(F) in
     let l1, l2 = (List.map hash_function parts1 , List.map hash_function parts2) in
     let set1, set2 = (List.map SC.map_to_field l1 , List.map SC.map_to_field l2) in
     let assoc_list1 = List.combine set1 parts1 in
@@ -148,8 +143,11 @@ end
 
 (* ========== Tests ========== *)
 
+module Field = FiniteField.Make(struct
+  let w = 16
+end) 
 
-module Sync = Syncing ;;
+module Sync = Syncing(Field) ;; 
 
 
 (* Testen voor fisher.txt *)
@@ -164,11 +162,17 @@ let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen
 let () = Printf.printf "========================================\n%!" in
 let outfile4 = "/home/spare/Documents/Output/test4" in
 let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
-print_string "Done.\n" ;;
+print_string "Done.\n"
 
 
 (* Testen voor big.bmp *)
-let () = Printf.printf "========================================\n%!" in
-let outfile = "/home/spare/Documents/Output/test_big" in
+
+(*module Field = FiniteField.Make(struct
+  let w = 13
+end)
+
+module Sync = Syncing(Field) ;; *)
+
+(*let outfile = "/home/spare/Documents/Output/test3" in
 let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
-print_string "Done.\n"
+print_string "Done.\n" *)

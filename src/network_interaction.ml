@@ -5,7 +5,7 @@ open FiniteField
 open Evaluation_points
 open Set_reconciliation
 open Construct_set
-open Read_file_network
+open Read_file
 
 module Sync_with_network =
   functor (F : FINITEFIELD) ->
@@ -116,15 +116,15 @@ struct
   let update_database db hash_function block begin_pos location =
     let hash_block = hash_function block in
     let size = String.length block in
-    let () = Signature.add_to_database (hash_block, begin_pos, size, location) ~db in
-    begin_pos + size
+    Signature.add_to_database (hash_block, begin_pos, size, location) ~db >>= fun () ->
+    Lwt.return (begin_pos + size)
 
 
   (* Handling requests from the client *)
   let handle_requests fd db hash_function =
     let ic = Lwt_io.of_fd ~mode:Lwt_io.input fd in
     let oc = Lwt_io.of_fd ~mode:Lwt_io.output fd in
-    let hashes_server = Signature.all_keys db in
+    Signature.all_keys db >>= fun hashes_server ->
     let set_server = SC.construct hashes_server in
     let size_server = List.length set_server in
     Lwt_io.read_value ic >>= fun location ->
@@ -141,12 +141,12 @@ struct
     let decode m =
       match m with
       | Original orig ->
-        let new_pos = update_database db hash_function orig !current_pos location in
+        update_database db hash_function orig !current_pos location >>= fun new_pos ->
         current_pos := new_pos ;
         size_sent := !size_sent + (String.length orig) ;
         Lwt.return orig
       | Hash (hash, i) ->
-        let opt = Signature.get_location hash db in
+        Signature.get_location hash db >>= fun opt ->
         match opt with
         | Some (begin_pos, size, file) ->
           current_pos := !current_pos + size ;
@@ -154,7 +154,7 @@ struct
         | None ->                                 (* Should be communicated back to the client, to acquire the original block. *)
           Lwt_io.write_value oc i >>= fun () ->
           Lwt_io.read_value ic >>= fun block ->
-          let new_pos = update_database db hash_function block !current_pos location in
+          update_database db hash_function block !current_pos location >>= fun new_pos ->
           current_pos := new_pos ;
           size_sent := !size_sent + (String.length block) ;
           Lwt.return block

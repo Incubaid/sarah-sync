@@ -1,139 +1,155 @@
-(* Reading of file *)
+(* Reading of file with Lwt *)
 
-(* Extra function *)
-let extract_string (res : Str.split_result) =
-  match res with
-  | Str.Text s -> s
-  | Str.Delim s -> s
+open Lwt
 
-
-(* Returns a list of the lines in a file. *)
-let lines file hash_function =
-  let chan = open_in file in
-  let as_string = Std.input_all chan in 
-  let rec loop current_pos blocks =
-    try
-      let pos = Str.search_forward (Str.regexp "[\n]+") as_string current_pos in
-      let size = pos - current_pos + 1 in
-      let hash = hash_function (String.sub as_string current_pos size) in
-      let blocks' = (hash, current_pos, size, file) :: blocks in
-      loop (pos + 1) blocks'
-    with Not_found ->
-      if current_pos <> String.length as_string
-      then 
-        begin
-          let size = String.length as_string - current_pos in
-          let hash = hash_function (String.sub as_string current_pos size) in
-          let blocks' = (hash, current_pos, size, file) :: blocks in
-          blocks'
-        end
-      else
-        blocks           
-  in
-  let all_lines = List.rev (loop 0 []) in
-  close_in chan ;
-  all_lines
-
-
-
-(* Returns a list of blocks of the file. 
-   The blocks have all have the same size, except maybe the first one. *)
-let blocks file hash_function ~size =
-  let chan = open_in file in
-  let as_string = Std.input_all chan in
-  let rec collect start b_list =    (* Traverse list backwards *)
-    if start = -1
-    then b_list
-    else
-      begin
-        let s = min size (start + 1) in
-        let block = hash_function (String.sub as_string (start - s + 1) s) in
-        let start' = start - s in
-        let b_list' = (block, start - s + 1, s, file) :: b_list in
-        collect start' b_list'
-      end
-  in
-  let list = collect (String.length as_string - 1) [] in
-  close_in chan ;
-  list
-
-(* Return a list of words, i.e. the file is split on whitespace *)
-let words file hash_function =
-  let chan = open_in file in
-  let as_string = Std.input_all chan in
-  let ws' = Str.full_split (Str.regexp "[ \t]+") as_string in
-  let current_pos = ref 0 in
-  let extract result =
-    let s = extract_string result in
-    let size = String.length s in
-    let hash = hash_function s in
-    let begin_pos = !current_pos in
-    current_pos := !current_pos + size ;
-    (hash, begin_pos, size, file)
-  in
-  let ws = List.map extract ws' in
-  close_in chan ;
-  ws
-
-(* Return file split on whitespace, with blocks of approximately a given size *)
-let blocks_using_whitespace file hash_function ~size = 
-  let chan = open_in file in
-  let as_string = Std.input_all chan in
-  let rec collect start b_list =    (* Traverse list backwards *)
-    if start = -1
-    then b_list
-    else
-      begin
-        let s = 
-          if start + 1 < size
-          then start + 1
-          else 
-            begin
-              let pos = 
-                try
-                  Str.search_backward (Str.regexp "[ \t\n]+") as_string (start - size + 1)
-                with Not_found ->
-                  start - size
-              in
-              start - pos
-            end
-        in
-        let block = hash_function (String.sub as_string (start - s + 1)  s) in (* Hash of the block *)
-        let start' = start - s in
-        let b_list' = (block, start - s + 1, s, file) :: b_list in
-        collect start' b_list'
-      end
-  in
-  let list = collect (String.length as_string - 1) [] in
-  close_in chan ;
-  list 
 
 (* Get the block from the specified location *)
 let get_block begin_pos size file =
-  let chan = open_in file in
-  let as_string = Std.input_all chan in
-  let block = String.sub as_string begin_pos size in
-  close_in chan ;
-  block
-;; 
+  let start = Int64.of_int begin_pos in
+  let get_it ic =
+    Lwt_io.set_position ic start >>= fun () ->
+    Lwt_io.read ~count:size ic
+  in
+  Lwt_io.with_file ~mode:Lwt_io.input file get_it
 
 
-(* Tests *)
-(*(*let file1 = "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" in *)
-(*let file2 = "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" in *)
-(*let file1 = "/home/spare/Documents/FilesOmTeSyncen/old/small.txt" in
-  let file2 = "/home/spare/Documents/FilesOmTeSyncen/new/small.txt" in *)
-let file1 = "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" in
-let file2 = "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" in
-let size = 4000 in
-let bs1 = blocks file1 ~size in
-let bs2 = blocks file2 ~size in
-(*let bs2 = words file2 in 
-  print_int (List.length bs1) ; print_string " "; print_int (List.length bs2) ; print_newline (); *)
-print_string "BLOCKS OF OLD\n" ;
-(*List.iter (fun el -> (print_string el ; print_newline () )) bs1  ;*)
-Printf.printf "%i\n" (List.length bs1);
-print_string "\nBLOCKS OF NEW\n" ;
-Printf.printf "%i\n" (List.length bs2)
-(*   List.iter (fun el -> (print_string el)) bs2 ;
-   print_newline () *) *)
+(* Read a file, until a certain delimiter is encountered.
+   A list of possible delimiters is supplied.
+   Raises End_of_file on end of input.*)
+let read_delim ic ~delims =
+  let rec continue res =
+    Lwt_io.read_char ic >>= fun c ->
+    let res' = res ^ String.make 1 c in
+    if List.mem c delims
+    then Lwt.return res'
+    else continue res'
+  in
+  continue ""
+
+
+(* Read a file for a specified count of characters and then some more until a certain delimiter is encountered.
+   A list of possible delimiters is supplied. *)
+let read_size_delim ic ~size ~delims =
+  Lwt_io.read ~count:size ic >>= fun s ->
+  let rec continue res =
+    Lwt.catch
+      (fun () ->
+        Lwt_io.read_char ic >>= fun c ->
+        let res' = res ^ String.make 1 c in
+        if List.mem c delims
+        then Lwt.return res'
+        else continue res'
+      )
+      (function
+      | e -> Lwt.return res)
+  in
+  continue s
+
+
+(* Returns a list of blocks of the file.
+   The blocks all have the same size, except maybe the last one. *)
+let blocks file hash_function ~size =
+  let get_blocks ic =
+    let rec loop bs =
+      let start = Int64.to_int (Lwt_io.position ic) in
+      Lwt_io.read ic ~count:size >>= fun str ->
+      let s = String.length str in
+      let b = hash_function str in
+      let info = (b, start, s, (file : string)) in
+      let bs' = info :: bs in
+      Lwt_io.length ic >>= fun i ->
+      let pos = Lwt_io.position ic in
+      (*if s != size *)
+      if pos = i
+      then
+        Lwt.return (List.rev bs')
+      else
+        loop bs'
+    in
+    loop []
+  in
+  Lwt_io.with_file ~mode:Lwt_io.input file get_blocks
+
+
+(* Returns a file split on whitespace, with blocks of approximately a given size *)
+let blocks_using_whitespace file hash_function ~size =
+  let get_blocks ic =
+    let delims = [' ' ;'\n' ; '\t' ] in
+    let rec loop bs =
+      let start = Int64.to_int (Lwt_io.position ic) in
+      read_size_delim ic ~size ~delims >>= fun str ->
+      let s = String.length str in
+      let b = hash_function str in
+      let info = (b, start, s, (file : string)) in
+      let bs' = info :: bs in
+      if s < size  (* Last block *)
+      then
+        Lwt.return (List.rev bs')
+      else
+        loop bs'
+    in
+    loop []
+  in
+  Lwt_io.with_file ~mode:Lwt_io.input file get_blocks
+
+
+(* Returns a file split on the lines (newlines appended as they were present in the original) *)
+let lines file hash_function =
+  let get_lines ic =
+    let delims = ['\n'] in
+    let rec loop bs =
+      let start = Int64.to_int (Lwt_io.position ic) in
+      Lwt.catch
+        (fun () ->
+          read_delim ic ~delims >>= fun str ->
+          let s = String.length str in
+          let b = hash_function str in
+          let info = (b, start, s, (file : string)) in
+          let bs' = info :: bs in
+          loop bs'
+        )
+        (function
+        | e ->    (* Last line *)
+          Lwt_io.set_position ic (Int64.of_int start) >>= fun () ->
+          Lwt_io.read ic >>= fun str ->
+          let s = String.length str in
+          let b = hash_function str in
+          let info = (b, start, s, (file : string)) in
+          let bs' = info :: bs in
+          Lwt.return (List.rev bs')
+        )
+    in
+    loop []
+  in
+  Lwt_io.with_file ~mode:Lwt_io.input file get_lines
+
+
+(* Returns a list of words, i.e. the file is split on whitespace *)
+let words file hash_function =
+  let get_words ic =
+    let delims = [' ' ; '\t'] in
+    let rec loop bs =
+      let start = Int64.to_int (Lwt_io.position ic) in
+      Lwt.catch
+        (fun () ->
+          read_delim ic ~delims >>= fun str ->
+          let s = String.length str in
+          let b = hash_function str in
+          let info = (b, start, s, (file : string)) in
+          let bs' = info :: bs in
+          loop bs'
+        )
+        (function
+        | e ->    (* Last word *)
+          Lwt_io.set_position ic (Int64.of_int start) >>= fun () ->
+          Lwt_io.read ic >>= fun str ->
+          let s = String.length str in
+          let b = hash_function str in
+          let info = (b, start, s, (file : string)) in
+          let bs' = info :: bs in
+          Lwt.return (List.rev bs')
+        )
+    in
+    loop []
+  in
+  Lwt_io.with_file ~mode:Lwt_io.input file get_words

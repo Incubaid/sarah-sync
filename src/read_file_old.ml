@@ -76,25 +76,4 @@ let blocks_using_whitespace file ~size =
   in
   let list = collect (String.length as_string - 1) [] in
   close_in chan ;
-  list ;;
-
-
-(* Tests *)
-(* (*let file1 = "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" in *)
-(*let file2 = "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" in *)
-(*let file1 = "/home/spare/Documents/FilesOmTeSyncen/old/small.txt" in
-  let file2 = "/home/spare/Documents/FilesOmTeSyncen/new/small.txt" in *)
-let file1 = "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" in
-let file2 = "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" in
-let size = 4000 in
-let bs1 = blocks file1 ~size in
-let bs2 = blocks file2 ~size in
-(*let bs2 = words file2 in 
-  print_int (List.length bs1) ; print_string " "; print_int (List.length bs2) ; print_newline (); *)
-print_string "BLOCKS OF OLD\n" ;
-(*List.iter (fun el -> (print_string el ; print_newline () )) bs1  ;*)
-Printf.printf "%i\n" (List.length bs1);
-print_string "\nBLOCKS OF NEW\n" ;
-Printf.printf "%i\n" (List.length bs2)
-(*   List.iter (fun el -> (print_string el)) bs2 ;
-   print_newline () *) *)
+  list
