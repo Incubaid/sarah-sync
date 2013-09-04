@@ -1,16 +1,25 @@
 (* Testing the interaction with the network *)
 
-open Network_interaction
-open FiniteField
 open Read_file_network
 open Lwt
 
 
+(*
+(* Fixing size of the field *)
+open FiniteField
+open Network_interaction
+  
 module Field = FiniteField.Make(struct
   let w = 16
 end)
 
-module N = Sync_with_network(Field)
+module N = Sync_with_network(Field) *)
+
+
+(* Determine size of the field automatically *)
+open Network_interaction_close_bound
+module N = Sync_with_network
+
 
 let host = "127.0.0.1"
 let port = 9000
@@ -19,16 +28,6 @@ let addr = Unix.ADDR_INET (Unix.inet_addr_of_string host, port)   (* Address mak
 
 let hash_function = function l ->
   Sha1.to_hex (Sha1.string l)
-
-(* Test fischer *)
-(* let partition_function =
-  let size = 10 in
-  blocks_using_whitespace ~size *)
-
-
-(* let file_client = "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt"
-let file_server = "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt"
-let destination = "/home/spare/Documents/Output/netwerk.txt" *) 
 
 
 (* Test big *)
@@ -47,9 +46,6 @@ let () =
   then
     begin
       let db = Signature.init_database () in   (* Building database for testing *)
-      (*let info_server = Lwt_main.run (partition_function file_server hash_function) in
-      let _ = Signature.commit_info info_server db in
-      Lwt_main.run (N.server soc addr db hash_function) *)
       Lwt_main.run 
         (
           partition_function file_server hash_function >>= fun info_server ->

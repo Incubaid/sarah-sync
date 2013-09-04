@@ -41,8 +41,7 @@ struct
     let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" t in
     let roots = ref ([] : roots) in
     let foundRoot root =
-      roots := root :: !roots ;
-      Printf.printf "Found root. %i already found.\n%!" (List.length !roots)
+      roots := root :: !roots
     in
     if coeffs.(0) =: zero then foundRoot zero ;
     let element = ref one in

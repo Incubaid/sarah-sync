@@ -8,17 +8,11 @@ open Construct_set
 
 open Sha1
 
-
 module Syncing =
-  functor (F : FINITEFIELD) ->
 struct
+
   type filename = string
-
-  module S = SetReconciliation(F)
-  module EP = EvaluationPts(F)
-
-  module SC = Set_constructor(F)
-
+ 
   (* Type of messages being sent *)
   type message = Hash of string * int    (* Hash and the block it identifies *)
                  | Original of string
@@ -42,9 +36,19 @@ struct
 
   (* Syncing *)
   let sync (client : filename) (server : filename) partition hash_function db =
+    let k' = 1  in    (* CHANGE THIS *)
     let total_hash = control_hash client hash_function in
     let info_client = partition client hash_function in
-    let info_server = partition server hash_function in
+    let info_server = partition server hash_function in  
+    let f_w = Field_size.get_size (List.length info_client) (List.length info_server) k' in
+    Printf.printf "Using w = %i\n%!" f_w ;
+    let module F = FiniteField.Make(struct
+      let w = f_w
+    end)
+    in
+    let module S = SetReconciliation(F) in
+    let module EP = EvaluationPts(F) in
+    let module SC = Set_constructor(F) in
     let set1, full_info_client = SC.construct_full_info info_client in
     let hashes_server = Signature.commit_info info_server db in
     let set2 = SC.construct hashes_server in
@@ -76,6 +80,7 @@ struct
 
 
 
+
   (* Write the reconstructed file to a specified location *)
   let construct_file file contents =
     let chan = open_out file in
@@ -85,6 +90,7 @@ struct
 
 
   exception Reconstruction_not_perfect
+
 
   (* Reconstruction *)
   let reconstruct (msg, hash) info_client hashes_server location hash_function nr_sent db =
@@ -118,11 +124,13 @@ struct
   let sha1 l =
     Sha1.to_hex (Sha1.string l)
 
+
   (* Syncing by dividing into blocks *)
   let sync_with_blocks file1 file2 size hash_function location =
     let db = Signature.init_database () in
     let nr_sent, msg, prts1, l2 = sync file1 file2 (blocks ~size) hash_function db in
     reconstruct msg prts1 l2 location hash_function nr_sent db
+
 
   (* Syncing by partitioning on the words *)
   let sync_with_words file1 file2 hash_function location =
@@ -130,11 +138,13 @@ struct
     let nr_sent, msg, prts1, l2 = sync file1 file2 words hash_function db in
     reconstruct msg prts1 l2 location hash_function nr_sent db
 
+
   (* Syncing by partitioning on whitespace *)
   let sync_with_whitespace file1 file2 size hash_function location =
     let db = Signature.init_database () in
     let nr_sent, msg, prts1, l2 = sync file1 file2 (blocks_using_whitespace ~size) hash_function db in
     reconstruct msg prts1 l2 location hash_function nr_sent db
+
 
   (* Syncing, by partitioning on the lines *)
   let sync_with_lines file1 file2 hash_function location =
@@ -145,17 +155,14 @@ struct
 end
 
 
-(* Tests. *)
+(* ========== Tests ========== *)
 
-module Field = FiniteField.Make(struct
-  let w = 16
-end)
 
-module Sync = Syncing(Field) ;;
+module Sync = Syncing ;;
 
 
 (* Testen voor fisher.txt *)
-(*let outfile1 = "/home/spare/Documents/Output/test1" in
+let outfile1 = "/home/spare/Documents/Output/test1" in
 let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in
 let () = Printf.printf "========================================\n%!" in
 let outfile2 = "/home/spare/Documents/Output/test2" in
@@ -166,10 +173,11 @@ let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen
 let () = Printf.printf "========================================\n%!" in
 let outfile4 = "/home/spare/Documents/Output/test4" in
 let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
-print_string "Done.\n" *)
+print_string "Done.\n" ;;
 
 
 (* Testen voor big.bmp *)
-let outfile = "/home/spare/Documents/Output/test3" in
+let () = Printf.printf "========================================\n%!" in
+let outfile = "/home/spare/Documents/Output/test_big" in
 let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
 print_string "Done.\n"
