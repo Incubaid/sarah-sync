@@ -10,10 +10,18 @@ struct
   type element = t
   type set = element list
 
+
   (* Evaluate charateristic polynomial in field F *)
   let evalCharPoly (s : set) (point : element) =
-    let factors = List.map ((-:) point) s in
-    List.fold_left ( *: ) one factors
+    let rec loop l acc = 
+      match l with
+      | [] -> acc
+      | x :: xs -> 
+        let acc' = (x -: point) *: acc in
+        loop xs acc' 
+    in
+    loop s one
+
 
   (* Quotient of two evaluations, in F *)
   let quotient (chi_1 : element) (chi_2 : element) =

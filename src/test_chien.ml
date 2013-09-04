@@ -36,8 +36,3 @@ let test_chien_search () =
     OUnit.assert_equal (List.sort compare answer) (List.sort compare roots) ~msg
   in
   List.iter test_one tests
-
-
-let suite = "Set Reconciliation" >::: [ "test_chien_search" >:: test_chien_search]
-
-let _ = run_test_tt_main suite
