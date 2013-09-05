@@ -7,9 +7,9 @@ open Set_reconciliation
 open Evaluation_points
 open Construct_set
 open Lwt
+open Handle_interaction
 
 open Sha1
-
 
 module Syncing =
   functor (F : FINITEFIELD) ->
@@ -20,48 +20,6 @@ struct
   module EP = EvaluationPts(F)
 
   module SC = Set_constructor(F)
-
-  (* Type of messages being sent *)
-  type message = Hash of string * int    (* Hash and the block it identifies *)
-                 | Original of string
-
-
-
-  (* Control hash of an entire file *)
-  let control_hash (file : filename) hash_function =
-    let hash ic =
-      Lwt_io.read ic >>= fun s ->
-      Lwt.return (hash_function s)
-    in
-    Lwt_io.with_file ~mode:Lwt_io.input file hash
-
-
-  (* Function missing in Lwt_list *)
-  let mapi f list =
-    let rec loop acc i =
-      function
-      | [] -> Lwt.return (List.rev acc)
-      |  x :: xs -> f i x >>= fun y ->
-        loop (y :: acc) (i + 1) xs
-    in
-    loop [] 0 list
-
-
-  (* Creating the message to send to the server *)
-  let create_message to_send full_info_client =
-    let element_or_original i (el, hash, begin_pos, size, file) =
-      if List.mem el to_send
-      then
-        begin
-          get_block begin_pos size file >>= fun s ->
-          Lwt.return (Original s)
-        end
-      else
-        begin
-          Lwt.return (Hash (hash, i))
-        end
-    in
-    mapi element_or_original full_info_client
 
 
   (* Syncing *)
@@ -94,30 +52,34 @@ struct
     Lwt.return (List.length to_send_by_1 , complete_message , info_client , hashes_server)
 
 
-  (* Write the reconstructed file to a specified location *)
-  let construct_file file content =
-    Lwt_unix.openfile file [Lwt_unix.O_CREAT ; Lwt_unix.O_WRONLY] 0o640 >>= fun fd ->
-    let loc_oc = Lwt_io.of_fd ~mode:Lwt_io.output fd in
-    Lwt_list.iter_s (Lwt_io.write loc_oc) content
-
-
   exception Reconstruction_not_perfect
+
 
   (* Reconstruction *)
   let reconstruct (msg, hash) info_client hashes_server location hash_function nr_sent db =
     Lwt_io.printlf "Reconstruction.%!" >>= fun () ->
     let number = ref nr_sent in
+    let current_pos = ref 0 in
     let decode m =
       match m with
-      | Original orig -> Lwt.return orig
-      | Hash (hash, i) ->
-        Signature.get_location hash db >>= fun opt ->
+      | Original orig ->  
+        update_database db hash_function orig !current_pos location >>= fun new_pos ->
+        current_pos := new_pos ;
+        Lwt.return orig
+      | Hash (hash, hash_2, i) ->
+        Signature.get_location hash hash_2 db >>= fun opt ->
         match opt with
-        | Some (begin_pos, size, file) -> get_block begin_pos size file
+        | Some (begin_pos, size, file) -> 
+          Signature.add_to_database (hash, hash_2, !current_pos, size, location) ~db >>= fun () ->
+          let () = current_pos := !current_pos + size in
+          get_block begin_pos size file
         | None ->
           number := succ !number ;
-          let _, begin_pos, size, file = List.nth info_client i in
-          get_block begin_pos size file
+          let _,_, begin_pos, size, file = List.nth info_client i in
+          get_block begin_pos size file >>= fun block ->
+          update_database db hash_function block !current_pos location >>= fun new_pos ->
+          current_pos := new_pos ;
+          Lwt.return block
     in
     Lwt_list.map_s decode msg >>= fun content ->
     construct_file location content >>= fun () ->

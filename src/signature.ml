@@ -3,7 +3,6 @@
 open Lwt
 open Camltc
 open Database_interaction
-open Read_file
 
 
 (* Creation of the database *)
@@ -12,16 +11,16 @@ let get_new_name () = Filename.temp_file "signature" ".db"
 let init_database () =
   let name = get_new_name () in
   Hotc.create name []
-  
+
 
 (* Interaction *)
-let add_to_database (hash, begin_pos, size, file) ~db =
-  Database_interaction.add hash begin_pos size file db
+let add_to_database (hash, hash_2, begin_pos, size, file) ~db =
+  Database_interaction.add hash hash_2 begin_pos size file db
 
-let get_location hash db =
-  Lwt.catch 
+let get_location hash hash_2 db =
+  Lwt.catch
     (fun () ->
-      Database_interaction.get_location hash db >>= fun loc ->
+      Database_interaction.get_location hash hash_2 db >>= fun loc ->
       Lwt.return (Some loc)
     )
     (function

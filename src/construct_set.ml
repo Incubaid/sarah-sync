@@ -32,6 +32,7 @@ struct
         wrap (int_of_string element)
       end
 
+
   (* Removing duplicate elements from a list *)
   let remove_duplicates l =
     let module S = Set.Make(F) in
@@ -43,22 +44,22 @@ struct
     in
     elements set_of_list
 
+
   (* Construct a set from a list of strings (hashes) *)
   let construct hashes =
     let set = List.map map_to_field hashes in
     remove_duplicates set
 
 
-  (* Extend the info (hash, begin, size, file) with a mapping of the hash to the field *)
+  (* Extend the info (hash, hash_2, begin, size, file) with a mapping of the hash to the field *)
   let construct_full_info info =
     let set = ref [] in
-    let extension (hash, start, size, file) =
+    let extension (hash, hash_2, start, size, file) =
       let el = map_to_field hash in
       set := el :: !set ;
-      (el, hash, start, size, file)
+      (el, hash, hash_2, start, size, file)
     in
     let extended_info = List.map extension info in
     remove_duplicates !set, extended_info
-
 
 end

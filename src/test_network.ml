@@ -4,11 +4,12 @@ open Read_file
 open Lwt
 
 
-(*
+
 (* Fixing size of the field *)
 open FiniteField
 open Network_interaction
-  
+
+(*
 module Field = FiniteField.Make(struct
   let w = 16
 end)
@@ -39,16 +40,16 @@ let partition_function =
 
 let file_client = "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp"
 let file_server = "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp"
-let destination = "/home/spare/Documents/Output/netwerk_big"
+(*let destination = "/home/spare/Documents/Output/netwerk_big" *)
 
 
-
+(*
 (* Test *)
 let () =
   if Sys.argv.(1) = "server"
   then
     begin
-      Lwt_main.run 
+      Lwt_main.run
         (
           Signature.init_database () >>= fun db ->    (* Building database for testing *)
           partition_function file_server hash_function >>= fun info_server ->
@@ -57,5 +58,25 @@ let () =
         )
     end
   else
-      Time.time Lwt_main.run (N.sync_with_server addr file_client partition_function hash_function destination)
+    Time.time Lwt_main.run (N.sync_with_server addr file_client partition_function hash_function destination)
+*)
 
+
+(* Test *)
+let () =
+  if Sys.argv.(1) = "server"
+  then
+    begin
+      Lwt_main.run
+        (
+          Signature.init_database () >>= fun db ->    (* Building database for testing *)
+          partition_function file_server hash_function >>= fun info_server ->
+          Signature.commit_info info_server db >>= fun _ ->
+          N.server soc addr db hash_function
+        )
+    end
+  else
+    begin
+      let destination = Sys.argv.(2) in
+      Time.time Lwt_main.run (N.sync_with_server addr file_client partition_function hash_function destination)
+    end

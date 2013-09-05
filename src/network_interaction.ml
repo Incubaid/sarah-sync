@@ -6,6 +6,8 @@ open Evaluation_points
 open Set_reconciliation
 open Construct_set
 open Read_file
+open Handle_interaction
+
 
 module Sync_with_network =
   functor (F : FINITEFIELD) ->
@@ -18,48 +20,7 @@ struct
   module SC = Set_constructor(F)
 
 
-  (* Control hash of an entire file *)
-  let control_hash (file : filename) hash_function =
-    let hash ic =
-      Lwt_io.read ic >>= fun s ->
-      Lwt.return (hash_function s)
-    in
-    Lwt_io.with_file ~mode:Lwt_io.input file hash
-
-
   (* ====== CLIENT ====== *)
-
-  (* Type of messages being sent *)
-  type message = Hash of string * int    (* Hash and the block it identifies *)
-                 | Original of string
-
-
-  let mapi f list =
-    let rec loop acc i =
-      function
-      | [] -> Lwt.return (List.rev acc)
-      |  x :: xs -> f i x >>= fun y ->
-        loop (y :: acc) (i + 1) xs
-    in
-    loop [] 0 list
-
-
-  (* Creating the message to send to the server *)
-  let create_message to_send full_info_client =
-    let element_or_original i (el, hash, begin_pos, size, file) =
-      if List.mem el to_send
-      then
-        begin
-          get_block begin_pos size file >>= fun s ->
-          Lwt.return (Original s)
-        end
-      else
-        begin
-          Lwt.return (Hash (hash, i))
-        end
-    in
-    mapi element_or_original full_info_client
-
 
   (* Sending extra blocks *)
   let send_extra_blocks ic oc info_client =
@@ -70,7 +31,7 @@ struct
           Lwt.return ()
       else
         begin
-          let _, begin_pos, size, file = List.nth info_client i in
+          let _, _, begin_pos, size, file = List.nth info_client i in
           get_block begin_pos size file >>= fun block ->            (* Acquire the block *)
           Lwt_io.write_value oc block >>= fun () ->                 (* Send the block *)
           loop ()
@@ -112,14 +73,6 @@ struct
   exception Reconstruction_not_perfect
 
 
-  (* Adds the location of a new block to the database and returns the new position in the file *)
-  let update_database db hash_function block begin_pos location =
-    let hash_block = hash_function block in
-    let size = String.length block in
-    Signature.add_to_database (hash_block, begin_pos, size, location) ~db >>= fun () ->
-    Lwt.return (begin_pos + size)
-
-
   (* Handling requests from the client *)
   let handle_requests fd db hash_function =
     let ic = Lwt_io.of_fd ~mode:Lwt_io.input fd in
@@ -145,11 +98,12 @@ struct
         current_pos := new_pos ;
         size_sent := !size_sent + (String.length orig) ;
         Lwt.return orig
-      | Hash (hash, i) ->
-        Signature.get_location hash db >>= fun opt ->
+      | Hash (hash, hash_2, i) ->
+        Signature.get_location hash hash_2 db >>= fun opt ->
         match opt with
         | Some (begin_pos, size, file) ->
-          current_pos := !current_pos + size ;
+          Signature.add_to_database (hash, hash_2, !current_pos, size, location) ~db >>= fun () ->
+          let () = current_pos := !current_pos + size in
           get_block begin_pos size file
         | None ->                                 (* Should be communicated back to the client, to acquire the original block. *)
           Lwt_io.write_value oc i >>= fun () ->
@@ -161,9 +115,7 @@ struct
     in
     Lwt_list.map_s decode msg >>= fun content ->
     Lwt_io.write_value oc (-1) >>= fun () ->
-    Lwt_unix.openfile location [Lwt_unix.O_CREAT ; Lwt_unix.O_WRONLY] 0o640 >>= fun fd ->
-    let loc_oc = Lwt_io.of_fd ~mode:Lwt_io.output fd in
-    Lwt_list.iter_s (Lwt_io.write loc_oc) content >>= fun () ->
+    construct_file location content >>= fun () ->
     control_hash location hash_function >>= fun new_hash ->
     (
       if new_hash <> orig_hash

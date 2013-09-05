@@ -2,6 +2,10 @@
 
 open Lwt
 
+(* MD5 *)
+let md5 el = 
+  Digest.to_hex (Digest.string el)
+
 
 (* Get the block from the specified location *)
 let get_block begin_pos size file =
@@ -55,11 +59,11 @@ let blocks file hash_function ~size =
       Lwt_io.read ic ~count:size >>= fun str ->
       let s = String.length str in
       let b = hash_function str in
-      let info = (b, start, s, (file : string)) in
+      let h_2 = md5 str in
+      let info = (b, h_2, start, s, (file : string)) in
       let bs' = info :: bs in
       Lwt_io.length ic >>= fun i ->
       let pos = Lwt_io.position ic in
-      (*if s != size *)
       if pos = i
       then
         Lwt.return (List.rev bs')
@@ -80,7 +84,8 @@ let blocks_using_whitespace file hash_function ~size =
       read_size_delim ic ~size ~delims >>= fun str ->
       let s = String.length str in
       let b = hash_function str in
-      let info = (b, start, s, (file : string)) in
+      let h_2 = md5 str in
+      let info = (b, h_2, start, s, (file : string)) in
       let bs' = info :: bs in
       if s < size  (* Last block *)
       then
@@ -104,7 +109,8 @@ let lines file hash_function =
           read_delim ic ~delims >>= fun str ->
           let s = String.length str in
           let b = hash_function str in
-          let info = (b, start, s, (file : string)) in
+          let h_2 = md5 str in
+          let info = (b, h_2, start, s, (file : string)) in
           let bs' = info :: bs in
           loop bs'
         )
@@ -114,7 +120,8 @@ let lines file hash_function =
           Lwt_io.read ic >>= fun str ->
           let s = String.length str in
           let b = hash_function str in
-          let info = (b, start, s, (file : string)) in
+          let h_2 = md5 str in
+          let info = (b, h_2, start, s, (file : string)) in
           let bs' = info :: bs in
           Lwt.return (List.rev bs')
         )
@@ -135,7 +142,8 @@ let words file hash_function =
           read_delim ic ~delims >>= fun str ->
           let s = String.length str in
           let b = hash_function str in
-          let info = (b, start, s, (file : string)) in
+          let h_2 = md5 str in
+          let info = (b, h_2, start, s, (file : string)) in
           let bs' = info :: bs in
           loop bs'
         )
@@ -145,7 +153,8 @@ let words file hash_function =
           Lwt_io.read ic >>= fun str ->
           let s = String.length str in
           let b = hash_function str in
-          let info = (b, start, s, (file : string)) in
+          let h_2 = md5 str in
+          let info = (b, h_2, start, s, (file : string)) in
           let bs' = info :: bs in
           Lwt.return (List.rev bs')
         )
