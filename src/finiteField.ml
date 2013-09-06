@@ -20,6 +20,7 @@ module type F = sig
   val print : t-> unit
   val (=:) : t-> t -> bool
   val wrap : int -> t
+  val unwrap : t -> int
   val compare : t -> t -> int
   val q : int
 end
@@ -68,6 +69,7 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
   let print = print_int
   let (=:) = (==) (* possible for ints *)
   let wrap el = el
+  let unwrap el = el
   let w = P.w
   let compare = compare
   let q = 1 lsl P.w

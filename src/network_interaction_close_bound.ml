@@ -20,7 +20,7 @@ struct
   (* Sending extra blocks *)
   let send_extra_blocks ic oc info_client =
     let rec loop () =
-      Lwt_io.read_value ic >>= fun i ->
+      Llio.input_int ic >>= fun i ->
       if i = -1
       then
         Lwt.return ()
@@ -28,7 +28,7 @@ struct
         begin
           let _, _, begin_pos, size, file = List.nth info_client i in
           get_block begin_pos size file >>= fun block ->            (* Acquire the block *)
-          Lwt_io.write_value oc block >>= fun () ->                 (* Send the block *)
+          Llio.output_string oc block >>= fun () ->                 (* Send the block *)
           loop ()
         end
     in
@@ -41,8 +41,8 @@ struct
     Lwt_io.with_connection addr
       (
         fun (ic,oc) ->
-          Lwt_io.write_value oc (List.length info_client) >>= fun () ->
-          Lwt_io.read_value ic >>= fun f_w ->
+          Llio.output_int oc (List.length info_client) >>= fun () ->
+          Llio.input_int ic >>= fun f_w ->
           let module F = FiniteField.Make(struct
             let w = f_w
           end)
@@ -52,22 +52,34 @@ struct
           let module SC = Set_constructor(F) in
           let set, full_info_client = SC.construct_full_info info_client in
           let l = List.length set in
-          Lwt_io.write_value oc new_location >>= fun () ->     (* Send location for reconstruction *)
-          Lwt_io.write_value oc l >>= fun () ->                (* Send size of set *)
-          Lwt_io.read_value ic >>= fun (max_m, k) ->           (* Maximal values of m and k*)
+          Llio.output_string oc new_location >>= fun () ->     (* Send location for reconstruction *)
+          Llio.output_int oc l >>= fun () ->                   (* Send size of set *)
+          Llio.input_int ic >>= fun max_m ->                   (* Maximum number of sample points *)
+          Llio.input_int ic >>= fun k ->                       (* Number of extra evaluation points *)
           let eval_pts = EP.evalPts max_m in
           let extra_pts = EP.extraEvalPts k in
           let chi = List.map (S.CharPoly.evalCharPoly set) eval_pts in
           let extra = List.map (S.CharPoly.evalCharPoly set) extra_pts in
-          Lwt_io.write_value oc (chi, extra) >>= fun () ->
-          Lwt_io.read_value ic >>= fun to_send ->
+          Llio.output_list
+            (fun oc el -> Llio.output_int oc (F.unwrap el))
+            oc chi >>= fun () ->
+          Llio.output_list
+            (fun oc el -> Llio.output_int oc (F.unwrap el))
+            oc extra  >>= fun () ->
+          Llio.input_list
+            (fun ic -> Llio.input_int ic >>= fun i ->
+              Lwt.return (F.wrap i))
+            ic >>= fun to_send_rev ->
+          let to_send = List.rev to_send_rev in
           create_message to_send full_info_client >>= fun message ->
+          Llio.output_list
+            Llio_extra.output_message_el
+            oc message >>= fun () ->
           control_hash file hash_function >>= fun total_hash ->
-          let complete_message = (message, total_hash) in
-          Lwt_io.write_value oc complete_message >>= fun () ->
+          Llio.output_string oc total_hash >>= fun () ->
           send_extra_blocks ic oc info_client >>= fun () ->
-          Lwt_io.read_value ic >>= fun s ->
-          Lwt_io.write Lwt_io.stdout s
+          Llio.input_string ic >>= fun s ->
+          Llio.output_string Lwt_io.stdout s
       )
 
 
@@ -82,10 +94,10 @@ struct
     let ic = Lwt_io.of_fd ~mode:Lwt_io.input fd in
     let oc = Lwt_io.of_fd ~mode:Lwt_io.output fd in
     Signature.all_keys db >>= fun hashes_server ->
-    Lwt_io.read_value ic >>= fun s_1 ->
+    Llio.input_int ic >>= fun s_1 ->
     let k' = 1 in    (* CHANGE THIS *)
     let f_w = Field_size.get_size s_1 (List.length hashes_server) k' in
-    Lwt_io.write_value oc f_w >>= fun () ->
+    Llio.output_int oc f_w >>= fun () ->
     Lwt_io.printlf "Decided to use w = %i.%!" f_w >>= fun () ->
     let module F = FiniteField.Make(struct
       let w = f_w
@@ -96,16 +108,30 @@ struct
     let module SC = Set_constructor(F) in
     let set_server = SC.construct hashes_server in
     let size_server = List.length set_server in
-    Lwt_io.read_value ic >>= fun location ->
-    Lwt_io.read_value ic >>= fun size_client ->
+    Llio.input_string ic >>= fun location ->
+    Llio.input_int ic >>= fun size_client ->
     let max_m, k = EP.get_max_vals size_client size_server in
-    Lwt_io.write_value oc (max_m, k)  >>= fun () ->
-    Lwt_io.read_value ic >>= fun (chi, extra ) ->
+    Llio.output_int oc max_m  >>= fun () ->
+    Llio.output_int oc k  >>= fun () ->
+    Llio.input_list
+      (fun ic -> Llio.input_int ic >>= fun i ->
+        Lwt.return (F.wrap i))
+      ic >>= fun chi_rev ->
+    let chi = List.rev chi_rev in
+    Llio.input_list
+      (fun ic -> Llio.input_int ic >>= fun i ->
+        Lwt.return (F.wrap i))
+      ic >>= fun extra_rev ->
+    let extra = List.rev extra_rev in
     let good_m, cfsNum, cfsDenom = EP.findM_server size_client chi extra set_server in
     let to_send_by_client = S.reconcile cfsNum cfsDenom in
-    Lwt_io.write_value oc to_send_by_client  >>= fun () ->
-    Lwt_io.read_value ic >>= fun (msg, orig_hash) ->
-    let size_sent = ref 0 in    (* Calculating the size of the information that has been sent *)
+    Llio.output_list
+      (fun oc el -> Llio.output_int oc (F.unwrap el))
+      oc to_send_by_client  >>= fun () ->
+    Llio.input_list Llio_extra.input_message_el ic >>= fun msg_rev ->
+    let msg = List.rev msg_rev in
+    Llio.input_string ic >>= fun orig_hash ->
+    let size_sent = ref 0 in    (* Calculating the size of the information has to been sent *)
     let current_pos = ref 0 in
     let decode m =
       match m with
@@ -122,15 +148,15 @@ struct
           let () = current_pos := !current_pos + size in
           get_block begin_pos size file
         | None ->                                 (* Should be communicated back to the client, to acquire the original block. *)
-          Lwt_io.write_value oc i >>= fun () ->
-          Lwt_io.read_value ic >>= fun block ->
+          Llio.output_int oc i >>= fun () ->
+          Llio.input_string ic >>= fun block ->
           update_database db hash_function block !current_pos location >>= fun new_pos ->
           current_pos := new_pos ;
           size_sent := !size_sent + (String.length block) ;
           Lwt.return block
     in
     Lwt_list.map_s decode msg >>= fun content ->
-    Lwt_io.write_value oc (-1) >>= fun () ->
+    Llio.output_int oc (-1) >>= fun () ->
     construct_file location content >>= fun () ->
     control_hash location hash_function >>= fun new_hash ->
     (
@@ -138,7 +164,7 @@ struct
       then Lwt_io.printlf "Reconstruction not correct. Size %i has been sent.%!" !size_sent
       else Lwt_io.printlf "Reconstruction correct. Size %i has been sent.%!" !size_sent
     ) >>= fun () ->
-    Lwt_io.write_value oc "Finished\n" >>= fun () ->
+    Llio.output_string oc "Finished\n" >>= fun () ->
     Lwt_io.flush oc
 
 
@@ -160,7 +186,6 @@ struct
       end
     in
     loop ()
-
 
 
 end

@@ -17,7 +17,7 @@ let control_hash (file : filename) hash_function =
     Lwt.return (hash_function s)
   in
   Lwt_io.with_file ~mode:Lwt_io.input file hash
- 
+
 
 (* Missing in Lwt_list *)
 let mapi f list =

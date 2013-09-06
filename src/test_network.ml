@@ -33,13 +33,14 @@ let hash_function = function l ->
   Sha1.to_hex (Sha1.string l)
 
 
+
 (* Test big *)
 let partition_function =
   let size = 4096 in    (* Lwt_io.set_default_buffer_size voor vergroten buffer*)
   blocks ~size
 
 let file_client = "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp"
-let file_server = "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp"
+let file_server = "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 
 (*let destination = "/home/spare/Documents/Output/netwerk_big" *)
 
 
