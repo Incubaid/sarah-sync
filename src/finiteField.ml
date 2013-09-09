@@ -34,10 +34,17 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
   type t = int
   let zero = 0
   let one = 1
+  let (=:) = (==) (* possible for ints *)
   let (+:) = (lxor)
   let (-:) = (lxor)
-  let ( *: ) a b = Galois.single_multiply a b P.w
-  let (/:) a b = Galois.single_divide a b P.w
+  let ( *: ) a b = 
+    if a =: zero || b =: zero
+    then zero
+    else Galois.single_multiply a b P.w
+  let (/:) a b = 
+    if a =: zero
+    then zero
+    else Galois.single_divide a b P.w
   let square x = x *: x
   let rec exp a i =
     if i = 0
@@ -48,26 +55,8 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
         then exp (square a) (i/2)
         else (exp (square a) (i/2)) *: a
       end
- (* let exp a i =
-    let rec loop acc el j =
-      if j = 0
-      then acc
-      else
-        begin
-          let sq = mult el el in
-          let j' = j lsr 1 in
-          let acc' =
-            if j land 1 = 0 (* Even *)
-            then acc
-            else mult acc el
-          in
-          loop acc' sq j'
-        end
-    in
-    loop one a i *)
   let primEl = 2
   let print = print_int
-  let (=:) = (==) (* possible for ints *)
   let wrap el = el
   let unwrap el = el
   let w = P.w

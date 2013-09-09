@@ -13,18 +13,19 @@ struct
   (* Verify whether a polynom is zero. Also returns the degree. *)
   let is_zero ?start (pol : polynom)  =
     let m = Array.length pol in
-    let rec loop b i =
-      if b && i >= 0
-      then
+    let rec loop i =
+      if i = 0
+      then pol.(i) =: zero , i
+      else
         begin
-          let b' = b && ( pol.(i) =: zero) in
-          loop b' (i - 1)
+          if pol.(i) =: zero
+          then loop (i - 1)
+          else false, i
         end
-      else b, (i + 1) (* i + 1: last index that held a zero *)
     in
     match start with
-    | Some s -> loop true s
-    | None -> loop true (m - 1)
+    | Some s -> loop s
+    | None -> loop (m - 1)
 
 
   (* Degree of a polynomial. Highest coefficient different from zero *)

@@ -28,7 +28,8 @@ let test_compare () =
     [|zero ; twentyseven ; twelve ; one|] , "test6" ;
     [|twentyseven ; thirtynine; thirteen ; one|] , "test7" ;
     [|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|] , "test8" ;
-    [|wrap 47 ; wrap 668 ; wrap 829 ; wrap 192 ; wrap 752 ; wrap 240 ; wrap 202 ; one|] , "test9"
+    [|wrap 47 ; wrap 668 ; wrap 829 ; wrap 192 ; wrap 752 ; wrap 240 ; wrap 202 ; one|] , "test9" ;
+    [|zero ; wrap 5; one ; zero ; one|], "test10"
   ]
   in
   let test_one (poly, id) =
