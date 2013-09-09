@@ -23,47 +23,6 @@ struct
     else current *:  primEl
 
 
-  (* Verify equality of polynomials *)
-  let equal_pols (pol1 : polynom) (pol2 : polynom) =
-    let d1 = G.P.get_degree pol1 in
-    let d2 = G.P.get_degree pol2 in
-    let b = (d1 = d2) in
-    let rec loop c i =
-      if c && i <= d1
-      then
-        begin
-          let c' = c && (pol1.(i) =: pol2.(i)) in
-          loop c' (i + 1)
-        end
-      else c
-    in
-    loop b 0
-
-
-  (* Verify whether polynomial is linear *)
-  let is_linear (pol : polynom) =
-    G.P.get_degree pol = 1
-
-
-  (* Get the root from a monic linear polynomial *)
-  let get_root (pol : polynom) =
-    let leading = pol.(1) in
-    if leading =: one
-    then pol.(0)
-    else pol.(0) /: pol.(1)
-
-
-  (* Verify whether a polynomial has a zero root *)
-  let has_zero_root (pol : polynom) =
-    Array.length pol <> 0 && pol.(0) =: zero
-
-
-  (* Extract zero root from the polynomial, i.e. divide the polynomial by x *)
-  let divide_by_x (pol : polynom) =
-    let d = G.P.get_degree pol in
-    Array.sub pol 1 d
-
-
   (* Trace function Tr (x) *)
   let init_trace () =
     let tr = Array.make ((1 lsl (w - 1)) + 1) zero in
@@ -103,90 +62,6 @@ struct
       end
 
 
-  (* Calculate Tr(el) *)
-  let trace el =
-    let rec loop acc i prev =
-      if i = w
-      then acc
-      else
-        begin
-          let prev' = square prev in
-          let acc' = acc +: prev' in
-          loop acc' (i + 1) prev'
-        end
-    in
-    loop el 1 el
-
-
-  (* Find element k with Tr(k) = one *)
-  let k =
-    let rec loop curr =
-      if trace curr =: one
-      then curr
-      else
-        begin
-          let curr' = curr *: primEl in
-          loop curr'
-        end
-    in
-    loop one
-
-
-  (* Verify whether polynomial is of the form ax^2 + bx + c *)
-  let is_quadratic pol =
-    G.P.get_degree pol == 2
-
-
-  (* Find roots of quadratic equation ax^2 + bx + c = 0 *)
-  let quadratic pol =
-    let a = pol.(2) in
-    let b = pol.(1) in
-    let c = pol.(0) in
-    if b =: zero 
-    then 
-      begin    (* Double root sqrt(c/a) *) 
-        let rec loop i acc =
-          if i = w
-          then acc
-          else
-            begin
-              let acc' = square acc in
-              loop (i + 1) acc'
-            end
-        in
-        let root = loop 1 (c /: a) in
-        [root; root]
-      end
-    else
-      begin
-        let delta = (a *: c) /: (b *: b) in
-        if trace delta =: zero     (* Two different roots *)
-        then
-          begin
-            let sol_1 =            (* s = k.delta^2 + (k+k^2).delta^4 +...+ (k+k^2+...+k^(2^(w-2))).delta^(2^(w-1)) *)
-              let rec loop k_sum last_k pow acc i =
-                if i = w
-                then acc
-                else
-                  begin
-                    let acc' = acc +: (k_sum *: pow) in
-                    let pow' = square pow in
-                    let last_k' = square last_k in
-                    let k_sum' = k_sum +: last_k' in
-                    loop k_sum' last_k' pow' acc' (i + 1)
-                  end
-              in
-              loop k k (square delta) zero 1
-            in
-            let sol_2 = sol_1 +: one in
-            let root_1 = (b /: a) *: sol_1 in
-            let root_2 = (b /: a) *: sol_2 in
-            [root_1 ; root_2]
-          end
-        else []
-      end
-
-
   (* Find all roots of a polynomial, using Tr(b.x). *)
   let roots (pol : polynom) =
     let rec aux rts p =
@@ -194,22 +69,22 @@ struct
       then rts
       else
         begin
-          if is_linear p
-          then (get_root p) :: rts
+          if G.P.is_linear p
+          then (G.P.get_root p) :: rts
           else
             begin
-              if has_zero_root p
+              if G.P.has_zero_root p
               then
                 begin
-                  let p' = divide_by_x p in
+                  let p' = G.P.divide_by_x p in
                   let rts' = zero :: rts in
                   rts' @ (aux [] p')
                 end
               else
-                if is_quadratic p
+                if G.P.is_quadratic p
                 then
                   begin
-                    let roots = quadratic p in
+                    let roots = G.P.quadratic p in
                     roots @ rts
                   end
                 else
@@ -219,7 +94,7 @@ struct
                       Printf.printf "Computing gcd.\n%!" ;
                       let p1 = G.gcd f trace in
                       Printf.printf "Computing gcd done.\n%!" ;
-                      if G.P.get_degree p1 = 0 || equal_pols p1 f   (* No good b *)
+                      if G.P.get_degree p1 = 0 || G.P.equal_pols p1 f   (* No good b *)
                       then
                         begin
                           if b =: largest      (* No b found *)
@@ -243,6 +118,7 @@ struct
         end
     in
     aux [] pol
+
 
 
 end

@@ -16,7 +16,9 @@ module type F = sig
   val (/:) : t -> t-> t
   val square : t -> t
   val exp : t -> int -> t   (* Exponentiation *)
+  val trace : t -> t
   val primEl : t
+  val k : t   (* Element with trace(k) = one *)
   val print : t-> unit
   val (=:) : t-> t -> bool
   val wrap : int -> t
@@ -34,6 +36,7 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
   type t = int
   let zero = 0
   let one = 1
+  let w = P.w
   let (=:) = (==) (* possible for ints *)
   let (+:) = (lxor)
   let (-:) = (lxor)
@@ -55,11 +58,33 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
         then exp (square a) (i/2)
         else (exp (square a) (i/2)) *: a
       end
+  let trace el =
+    let rec loop acc i prev =
+      if i = w
+      then acc
+      else
+        begin
+          let prev' = square prev in
+          let acc' = acc +: prev' in
+          loop acc' (i + 1) prev'
+        end
+    in
+    loop el 1 el
   let primEl = 2
+  let k =
+    let rec loop curr =
+      if trace curr =: one
+      then curr
+      else
+        begin
+          let curr' = curr *: primEl in
+          loop curr'
+        end
+    in
+    loop one
   let print = print_int
   let wrap el = el
   let unwrap el = el
-  let w = P.w
   let compare = compare
   let q = 1 lsl P.w
 
