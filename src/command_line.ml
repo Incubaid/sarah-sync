@@ -157,32 +157,65 @@ let client_cmd =
 
 
 (* Local (no network) *)
-let local file_1 file_2 dest partition field_size block_size=
-  match field_size with
-  | "auto" ->
+let local file_1 file_2 dest partition field_size block_size db_name =
+  match db_name with
+  | "none" ->   (* No database will be used in the syncing *)
     begin
-      let module Sync = Sync_close_bound.Syncing in
-      match partition with
-      | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
-      | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
-      | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
-      | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
-      | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+      match field_size with
+      | "auto" ->
+        begin
+          let module Sync = Sync_close_bound_no_db.Syncing in
+          match partition with
+          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
+          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
+          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
+          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+        end
+      | s -> 
+        begin
+          let f_w = int_of_string s in
+          let module F = FiniteField.Make(struct
+            let w = f_w
+          end)
+          in
+          let module Sync = Sync_two_files_no_db.Syncing(F) in
+          match partition with
+          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
+          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
+          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
+          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+        end
     end
-  | s -> 
+  | db ->
     begin
-      let f_w = int_of_string s in
-      let module F = FiniteField.Make(struct
-        let w = f_w
-      end)
-      in
-      let module Sync = Sync_two_files.Syncing(F) in
-      match partition with
-      | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
-      | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
-      | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
-      | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
-      | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+      match field_size with
+      | "auto" ->
+        begin
+          let module Sync = Sync_close_bound.Syncing in
+          match partition with
+          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest db
+          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
+          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest db
+          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest db
+          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
+        end
+      | s -> 
+        begin
+          let f_w = int_of_string s in
+          let module F = FiniteField.Make(struct
+            let w = f_w
+          end)
+          in
+          let module Sync = Sync_two_files.Syncing(F) in
+          match partition with
+          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest db
+          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
+          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest db
+          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest db
+          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
+        end
     end
 
 
@@ -211,12 +244,16 @@ let local_cmd =
     let doc = "Size of the blocks." in
     Arg.(value & opt int 4096 & info ["s"; "size"] ~docv:"SIZE" ~doc)
   in
+  let db_name =
+    let doc = "Database to use." in
+    Arg.(value & opt string "none" & info ["db"; "database"] ~docv:"DB_NAME" ~doc)
+  in
   let doc = "Syncing locally." in
   let man = [
     `S "DESCRIPTION" ;
     `P "Syncs two files locally. A file to reconstruct at a specified location is provided."]
   in
-  Term.(pure local $ file_1 $ file_2 $ dest $ partition $ field_size $ block_size),
+  Term.(pure local $ file_1 $ file_2 $ dest $ partition $ field_size $ block_size $ db_name),
   Term.info "local" ~doc ~man
 
 

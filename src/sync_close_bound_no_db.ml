@@ -145,7 +145,7 @@ struct
 
 end
 
-
+(*
 (* ========== Tests ========== *)
 
 
@@ -172,3 +172,4 @@ let () = Printf.printf "========================================\n%!" in
 let outfile = "/home/spare/Documents/Output/test_big" in
 let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
 print_string "Done.\n"
+*)

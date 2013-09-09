@@ -140,7 +140,7 @@ struct
 
 end
 
-
+(*
 (* ========== Tests ========== *)
 
 module Field = FiniteField.Make(struct
@@ -176,3 +176,4 @@ module Sync = Syncing(Field) ;; *)
 (*let outfile = "/home/spare/Documents/Output/test3" in
 let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
 print_string "Done.\n" *)
+*)

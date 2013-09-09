@@ -8,6 +8,7 @@ open Evaluation_points
 open Construct_set
 open Lwt
 open Handle_interaction
+open Camltc
 
 open Sha1
 
@@ -104,40 +105,40 @@ struct
 
 
   (* Syncing by dividing into blocks *)
-  let sync_with_blocks file1 file2 size hash_function location =
+  let sync_with_blocks file1 file2 size hash_function location db_name =
     Lwt_main.run 
       (
-        Signature.init_database () >>= fun db ->
+        Hotc.create db_name [] >>= fun db ->
         sync file1 file2 (blocks ~size) hash_function db >>= fun (nr_sent, msg, prts1,l2) ->
         reconstruct msg prts1 l2 location hash_function nr_sent db
       )
 
 
   (* Syncing by partitioning on the words *)
-  let sync_with_words file1 file2 hash_function location =
+  let sync_with_words file1 file2 hash_function location db_name =
     Lwt_main.run 
       (    
-        Signature.init_database () >>= fun db ->
+        Hotc.create db_name [] >>= fun db ->
         sync file1 file2 words hash_function db >>= fun (nr_sent, msg, prts1, l2) ->
         reconstruct msg prts1 l2 location hash_function nr_sent db
       )
 
 
   (* Syncing by partitioning on whitespace *)
-  let sync_with_whitespace file1 file2 size hash_function location =
+  let sync_with_whitespace file1 file2 size hash_function location db_name =
     Lwt_main.run 
       (
-        Signature.init_database () >>= fun db ->
+        Hotc.create db_name [] >>= fun db ->
         sync file1 file2 (blocks_using_whitespace ~size) hash_function db >>= fun (nr_sent, msg, prts1, l2) ->
         reconstruct msg prts1 l2 location hash_function nr_sent db
       )
 
 
   (* Syncing, by partitioning on the lines *)
-  let sync_with_lines file1 file2 hash_function location =
+  let sync_with_lines file1 file2 hash_function location db_name =
     Lwt_main.run
       (
-        Signature.init_database () >>= fun db ->
+        Hotc.create db_name [] >>= fun db ->
         sync file1 file2 lines hash_function db >>= fun (nr_sent, msg, prts1, l2) ->
         reconstruct msg prts1 l2 location hash_function nr_sent db
       )
@@ -151,22 +152,22 @@ module Sync = Syncing ;;
 
 (* Testen voor fisher.txt *)
 let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in
+let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1 outfile1) "/tmp/test1.db" in
 let () = Printf.printf "========================================\n%!" in
 let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in
+let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1 outfile2) "/tmp/test2.db" in
 let () = Printf.printf "========================================\n%!" in
 let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in
+let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1 outfile3) "/tmp/test3.db" in
 let () = Printf.printf "========================================\n%!" in
 let outfile4 = "/home/spare/Documents/Output/test4" in
-let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
+let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1 outfile4) "/tmp/test4.db" in
 print_string "Done.\n" ;;
 
 
 (* Testen voor big.bmp *)
 let () = Printf.printf "========================================\n%!" in
 let outfile = "/home/spare/Documents/Output/test_big" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4096 Sync.sha1) outfile in
+let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4096 Sync.sha1 outfile) "/tmp/test_big.db" in
 print_string "Done.\n"
 *)
