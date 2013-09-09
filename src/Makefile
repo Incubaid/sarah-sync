@@ -1,3 +1,5 @@
+default : build
+
 all: build test
 
 clean:
@@ -7,7 +9,7 @@ build:
 	ocamlbuild -j 4 -use-ocamlfind test.native
 
 test:
-	./test.native
+	./test.native --run-all-tests
 
 indent-tabs-to-spaces:
 	@echo "Converting tabs to spaces..."
