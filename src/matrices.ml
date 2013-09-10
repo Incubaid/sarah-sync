@@ -22,17 +22,25 @@ struct
   let isEmpty mat =
     Array.length mat == 0 || Array.length mat.(0) == 0
 
+
   (* Verify whether all rows have the same number of columns *)
   let isValid mat =
     if isEmpty mat
     then raise Empty_matrix
     else
+      let m = Array.length mat in
       let n = Array.length mat.(0) in
-      let checkDim row current_result =
-        let dim = Array.length row in
-        current_result && (dim == n)
+      let rec loop row =
+        if row == m   (* All rows have been checked *)
+        then true 
+        else
+          let dim = Array.length mat.(row) in
+          if dim == n
+          then loop (row + 1)
+          else false
       in
-      Array.fold_right checkDim mat true
+      loop 1
+
 
   (* Dimensions *)
   let rows mat = Array.length mat
@@ -40,16 +48,6 @@ struct
   let columns mat = Array.length mat.(0)
 
   let dimensions mat = (rows mat , columns mat )
-
-
-  (* Extra function *)
-  let zipWith array1 array2 f =
-    let result = Array.copy array1 in
-    let combine i a =
-      result.(i) <- f a array2.(i)
-    in
-    Array.iteri combine result ;
-    result
 
 
   (* Index of maximal element in part of a column of a matrix *)
@@ -72,36 +70,42 @@ struct
 
   (* Gauss elimination. Overwrites the matrix.
      When matrix is singular, the procedure terminates. *)
-  let gaussElim (mat : matrix) =
+  let gauss_elim (mat : matrix) =
     let m, n = dimensions mat in
-    let k = ref 0 in
-    let continue = ref true in
-    while ( !continue && !k < m ) do
-      let i_max = index_max_element !k !k (m-1) mat in
-      if mat.(i_max).(!k) =: zero
-      then continue := false
+    let rec loop k =
+      if k = m
+      then () 
       else
-        let tmp = mat.(!k) in
-        let () = mat.(!k) <- mat.(i_max) in
-        let () = mat.(i_max) <- tmp in
-        for i = !k + 1 to m - 1 do
-          let factor = mat.(i).(!k) /: mat.(!k).(!k) in
-          for j = !k + 1 to n - 1 do
-            mat.(i).(j) <- mat.(i).(j) -: ( mat.(!k).(j) *: factor )
-          done ;
-          mat.(i).(!k) <- zero
-        done ;
-        k := succ (!k)
-    done
+        begin
+          let i_max = index_max_element k k (m-1) mat in
+          if mat.(i_max).(k) =: zero
+          then ()
+          else
+            begin
+              let tmp = mat.(k) in
+              let () = mat.(k) <- mat.(i_max) in
+              let () = mat.(i_max) <- tmp in
+              for i = k + 1 to m - 1 do
+                let factor = mat.(i).(k) /: mat.(k).(k) in
+                for j = k + 1 to n - 1 do
+                  mat.(i).(j) <- mat.(i).(j) -: ( mat.(k).(j) *: factor )
+                done ;
+              done ;
+              loop (k + 1)
+            end
+        end
+    in
+    loop 0
+
 
   (* Determine whether a row contains only zeros *)
-  let isZeroRow (row : vector) =
+  let is_zero_row (row : vector) =
     let b,_ = P.is_zero (row, Array.length row - 1) in
     b
 
 
   (* Determine whether a row is invalid, i.e. (0,0,...,c) *)
-  let isInvalidRow (row : vector) =
+  let is_invalid_row (row : vector) =
     let m = Array.length row in
     if row.(m-1) =: zero
     then false
@@ -112,39 +116,55 @@ struct
       end
 
 
-  (* Backward substitution. Takes zero-rows and invalid systems into account. *)
-  let backSubst (mat : matrix) =
+  (* Get the solution for the variable corresponding to the column *)
+  let get_solution (mat : matrix) last_kol kol b sols =
+    let init_res = b in
+    let rec get res i =
+      if i = kol
+      then res /: mat.(kol).(kol)
+      else
+        begin
+          let res' = res -: (mat.(kol).(i) *: sols.(i)) in
+          get res' (i - 1)
+        end
+    in
+    get init_res last_kol
+  
+
+  (* Backward substitution. Takes zero-rows and invalid systems into account. 
+     Once one valid row has been found, no invalid or zero-rows can occur anymore. *)
+  let back_subst (mat : matrix) =
     let m,n = dimensions mat in
-    let solutions = Array.make m zero in
+    let sols = Array.make m zero in
+    let rec handle_zero_or_invalid r =
+      if is_invalid_row mat.(r)
+      then raise System_no_solution
+      else
+        begin
+          if is_zero_row mat.(r)
+          then
+            begin
+              let () = sols.(r) <- one in      (* Arbitrary solution *)
+              handle_zero_or_invalid (r-1)
+            end
+          else r                               (* Returns the first non-zero row *)
+        end
+    in
+    let r_init = handle_zero_or_invalid (m - 1) in
     let rec loop r =
       if r >= 0
       then
         begin
-          if isInvalidRow mat.(r)
-          then raise System_no_solution
-          else
-            begin
-              if isZeroRow mat.(r)
-              then
-                begin
-                  let () = solutions.(r) <- one in (* Arbitrary solution *)
-                  loop (r-1)
-                end
-              else
-                begin
-                  let coeffs = Array.sub mat.(r) 0 m in
-                  let b = mat.(r).(n-1) in
-                  let others = zipWith coeffs solutions ( *: ) in
-                  let b' = Array.fold_left (-:) b others in
-                  let result = b' /: coeffs.(r) in
-                  let () = solutions.(r) <- result in
-                  loop (r-1)
-                end
-            end
+          let b = mat.(r).(n-1) in
+          let res = get_solution mat (m - 1) r b sols in
+          let () = sols.(r) <- res in
+          loop (r-1)
         end
+      else ()
     in
-    loop (m-1) ;
-    solutions
+    loop r_init ;
+    sols
+
 
   (* Solve a given system. Gauss elimination, followed by backward substitution. *)
   let solveSystem (system : matrix) =
@@ -155,8 +175,8 @@ struct
         if isValid system
         then
           begin
-            let () = gaussElim system in
-            backSubst system
+            let () = gauss_elim system in
+            back_subst system
           end
         else raise Invalid_matrix
       end

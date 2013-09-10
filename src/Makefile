@@ -8,6 +8,7 @@ clean:
 build:
 	ocamlbuild -j 4 -use-ocamlfind test.native
 	ocamlbuild -j 4 -use-ocamlfind command_line.native
+	rm -f ssync
 	ln -s command_line.native ssync
 
 test:

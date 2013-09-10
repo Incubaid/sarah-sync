@@ -101,7 +101,7 @@ struct
                     (*let mid' = (min + max) / 2 in
                     if (mid' - delta) land 1 <> 0   (* Ensure same parity *)
                     then mid' + 1
-                    else mid'*)
+                    else mid' *)
                     let product = float_of_int (min * max) in
                     int_of_float (ceil (sqrt product))
                   in
