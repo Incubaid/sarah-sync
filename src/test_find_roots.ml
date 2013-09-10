@@ -20,14 +20,14 @@ let test_roots () =
   let fortyfive = (wrap 5) *: (wrap 9) in
   let fourteen = (wrap 5) +: (wrap 9) in
   let tests = [
-    [|one ; zero ; one|] , [ one ; one], "test1"  ;
-    [|one ; zero ; zero|] , [], "test2"   ;
-    [|zero ; one ; zero ; one|] ,[zero ; one ; one], "test3"  ;
-    [|zero ; wrap 5 ; one|], [zero ; wrap 5], "test4" ;
-    [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5 ; wrap 5], "test5" ;
-    [|zero ; twentyseven ; twelve ; one|] , [zero ; wrap 3 ; wrap 9], "test6" ;
-    [|twentyseven ; thirtynine; thirteen ; one|] , [wrap 1 ; wrap 3 ; wrap 9], "test7" ;
-    [|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9], "test8"
+    ([|one ; zero ; one|], 2) , [ one ; one], "test1"  ;
+    ([|one ; zero ; zero|], 0) , [], "test2"   ;
+    ([|zero ; one ; zero ; one|], 3) ,[zero ; one ; one], "test3"  ;
+    ([|zero ; wrap 5 ; one|], 2), [zero ; wrap 5], "test4" ;
+    ([|zero ; twentyfive ; zero ; one |], 3) , [zero ; wrap 5 ; wrap 5], "test5" ;
+    ([|zero ; twentyseven ; twelve ; one|],  3) , [zero ; wrap 3 ; wrap 9], "test6" ;
+    ([|twentyseven ; thirtynine; thirteen ; one|], 3) , [wrap 1 ; wrap 3 ; wrap 9], "test7" ;
+    ([|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|], 2) , [wrap 5 ; wrap 9], "test8"
   ]
   in
   let test_one (poly, rts, id) =
@@ -37,3 +37,8 @@ let test_roots () =
     OUnit.assert_equal (List.sort compare answer) (List.sort compare rts) ~msg
   in
   List.iter test_one tests
+
+
+let suite = "Set Reconciliation" >::: [ "test_bta" >:: test_roots]
+
+let _ = OUnit.run_test_tt suite

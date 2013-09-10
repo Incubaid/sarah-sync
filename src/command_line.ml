@@ -49,13 +49,13 @@ let load_database_cmd =
     Arg.(required & pos 2 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let block_size =
-    let doc = "Size of the blocks." in
+    let doc = "Size of the blocks. Only needs to be specified when the partition function requires it." in
     Arg.(value & opt int 4096 & info ["s"; "size"] ~docv:"SIZE" ~doc)
   in
   let doc = "Loading database." in
   let man = [
     `S "DESCRIPTION" ;
-    `P "Partition a file and initialize database with the obtained parts"]
+    `P "Partition a file and initialize database with the obtained parts."]
   in
   Term.(pure load $ file $ db_name $ partition $ block_size),
   Term.info "load_db" ~doc ~man
@@ -84,7 +84,7 @@ let server db field_size =
 
 let server_cmd =
   let db =
-    let doc = "Database to use in syncing." in
+    let doc = "Database to use in syncing. The database contains the information available on the server." in
     Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DB_NAME" ~doc)
   in
   let field_size =
@@ -102,7 +102,7 @@ let server_cmd =
 
 (* Client *)
 let client file dest partition field_size block_size=
-  Lwt_main.run
+  Time.time Lwt_main.run
     (
       let partition_function =
         match partition with
@@ -144,7 +144,7 @@ let client_cmd =
     Arg.(value & opt string "auto" & info ["f"; "field"] ~docv:"FIELD" ~doc)
   in
   let block_size =
-    let doc = "Size of the blocks." in
+    let doc = "Size of the blocks. Only needs to be specified when the partition function requires it." in
     Arg.(value & opt int 4096 & info ["s"; "size"] ~docv:"SIZE" ~doc)
   in
   let doc = "Setting up the client." in
@@ -165,12 +165,15 @@ let local file_1 file_2 dest partition field_size block_size db_name =
       | "auto" ->
         begin
           let module Sync = Sync_close_bound_no_db.Syncing in
-          match partition with
-          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
-          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
-          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
-          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
-          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+          let f =
+            match partition with
+            | "words" -> Sync.sync_with_words file_1 file_2 hash_function
+            | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function
+            | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function
+            | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function
+            | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function
+          in
+          Time.time f dest
         end
       | s -> 
         begin
@@ -180,12 +183,15 @@ let local file_1 file_2 dest partition field_size block_size db_name =
           end)
           in
           let module Sync = Sync_two_files_no_db.Syncing(F) in
-          match partition with
-          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
-          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
-          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
-          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
-          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+          let f =
+            match partition with
+            | "words" -> Sync.sync_with_words file_1 file_2 hash_function
+            | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function
+            | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function
+            | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function
+            | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function
+          in
+          Time.time f dest
         end
     end
   | db ->
@@ -194,12 +200,15 @@ let local file_1 file_2 dest partition field_size block_size db_name =
       | "auto" ->
         begin
           let module Sync = Sync_close_bound.Syncing in
-          match partition with
-          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest db
-          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
-          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest db
-          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest db
-          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
+          let f =
+            match partition with
+            | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
+            | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+            | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
+            | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
+            | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+          in
+          Time.time f db
         end
       | s -> 
         begin
@@ -209,12 +218,15 @@ let local file_1 file_2 dest partition field_size block_size db_name =
           end)
           in
           let module Sync = Sync_two_files.Syncing(F) in
-          match partition with
-          | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest db
-          | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
-          | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest db
-          | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest db
-          | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest db
+          let f = 
+            match partition with
+            | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
+            | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+            | "whitespace" -> Sync.sync_with_whitespace file_1 file_2 block_size hash_function dest
+            | "lines" -> Sync.sync_with_lines file_1 file_2 hash_function dest
+            | _ -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
+          in
+          Time.time f db
         end
     end
 
@@ -241,7 +253,7 @@ let local_cmd =
     Arg.(value & opt string "auto" & info ["f"; "field"] ~docv:"FIELD" ~doc)
   in
   let block_size =
-    let doc = "Size of the blocks." in
+    let doc = "Size of the blocks. Only needs to be specified when the partition function requires it." in
     Arg.(value & opt int 4096 & info ["s"; "size"] ~docv:"SIZE" ~doc)
   in
   let db_name =
@@ -262,7 +274,7 @@ let default_cmd =
   let doc = "tests for syncing" in
   let man = [
     `S "DESCRIPTION" ;
-    `P "syncing. Client-server setup" ]
+    `P "syncing. With or without network-interaction, with or without database-interaction. Field size can be provided or determined automatically." ]
   in
   Term.(ret (pure (`Ok ()) )) ,
   Term.info "default" ~doc ~man

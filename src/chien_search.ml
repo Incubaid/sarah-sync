@@ -8,17 +8,16 @@ module Chien =
 struct
   open F
 
-  type element = t
-  type polynom = element array (* Coefficients *)
-  type roots = element list    (* Roots *)
-
   module P = Polynom(F)
+
+  type element = P.element
+  type polynom = P.polynom     (* Coefficients *)
+  type roots = element list    (* Roots *)
 
 
   (* Synthetic division of a polynomial by (x-a) *)
-  let synth_div (pol : polynom) (a : element) =
-    let t = P.get_degree pol in
-    let rec loop i el prev = 
+  let synth_div (pol, t : polynom) (a : element) =
+    let rec loop i el prev =
       if i = -1
       then ()
       else
@@ -30,47 +29,52 @@ struct
         end
     in
     loop (t - 1) pol.(t) zero;
-    pol.(t) <- zero
+    pol.(t) <- zero ;
+    P.proper_degree (pol, t - 1)
 
 
   (* Chien-search algorithm. Determines multiplicity of roots.
      Coefficients should be ordered according to ascending powers of x.
      Counts roots, so the procedure can terminate when all roots are found. *)
-  let chienSearch (coeffs : polynom) =
-    let t = P.get_degree coeffs in
-    let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" t in
-    let roots = ref ([] : roots) in
-    let foundRoot root =
-      roots := root :: !roots
+  let chienSearch ((coeffs, deg) as pol : polynom) =
+    let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" deg in
+    let rts_init =
+    if coeffs.(0) =: zero
+    then [zero]
+    else []
     in
-    if coeffs.(0) =: zero then foundRoot zero ;
-    let element = ref one in
-    let counter = ref 0 in
-    while ( List.length !roots <> t && !counter < q - 1) do
-      let rec loop i acc prev_pow= 
-        if i > (P.get_degree coeffs)
-        then acc
-        else 
-          begin
-            let pow = prev_pow *: !element in
-            let term = coeffs.(i) *: pow in
-            let acc' = acc +: term in
-            loop (i + 1) acc' pow
-          end
-      in 
-      let sum = loop 1 coeffs.(0) one in
-      if sum =: zero 
-      then
-        begin
-          foundRoot !element ;
-          synth_div coeffs !element
-        end
+    let rec find el rts k ((coeffs, t) as p) =
+      if List.length rts == deg || k == q
+      then rts   (* All roots have been found *)
       else
         begin
-          element := !element *: primEl ;
-          counter := succ (!counter)
+          let rec loop i acc prev_pow =
+            if i > t
+            then acc
+            else
+              begin
+                let pow = prev_pow *: el in
+                let term = coeffs.(i) *: pow in
+                let acc' = acc +: term in
+                loop (i + 1) acc' pow
+              end
+          in
+          let sum = loop 1 coeffs.(0) one in
+          let rts' , el', k' , p'=
+            if sum =: zero
+            then
+              begin
+                let p' = synth_div p el in
+                el :: rts, el, k, p'
+              end
+            else
+              begin
+                rts, el *: primEl, (k + 1), p
+              end
+          in
+          find el' rts' k' p'
         end
-    done ;
-    !roots
+    in
+    find one rts_init 0 pol
 
 end

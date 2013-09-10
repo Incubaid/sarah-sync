@@ -49,7 +49,7 @@ struct
       result.(i) <- f a array2.(i)
     in
     Array.iteri combine result ;
-    result 
+    result
 
 
   (* Index of maximal element in part of a column of a matrix *)
@@ -68,6 +68,7 @@ struct
         end
     in
     find_max (start + 1) start
+
 
   (* Gauss elimination. Overwrites the matrix.
      When matrix is singular, the procedure terminates. *)
@@ -95,7 +96,7 @@ struct
 
   (* Determine whether a row contains only zeros *)
   let isZeroRow (row : vector) =
-    let b,_ = P.is_zero row in
+    let b,_ = P.is_zero (row, Array.length row - 1) in
     b
 
 
@@ -104,9 +105,9 @@ struct
     let m = Array.length row in
     if row.(m-1) =: zero
     then false
-    else 
+    else
       begin
-        let b, _ = P.is_zero ~start:(m-2) row in
+        let b, _ = P.is_zero ~start:(m-2) (row, m-1) in
         b
       end
 
@@ -153,9 +154,9 @@ struct
       begin
         if isValid system
         then
-          begin      
+          begin
             let () = gaussElim system in
-            backSubst system 
+            backSubst system
           end
         else raise Invalid_matrix
       end

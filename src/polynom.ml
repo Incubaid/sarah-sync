@@ -8,11 +8,10 @@ struct
   open F
 
   type element = t
-  type polynom = element array (* Coeffs, ordered according to increasing powers of x *)
+  type polynom = element array * int   (* Coeffs, ordered according to increasing powers of x. Second element is the degree. *)
 
-  (* Verify whether a polynom is zero. Also returns the degree. *)
-  let is_zero ?start (pol : polynom)  =
-    let m = Array.length pol in
+  (* Verify whether a polynom is zero. *)
+  let is_zero ?start (pol, d : polynom)  =
     let rec loop i =
       if i = 0
       then pol.(i) =: zero , i
@@ -25,20 +24,33 @@ struct
     in
     match start with
     | Some s -> loop s
-    | None -> loop (m - 1)
+    | None -> loop d
 
 
   (* Degree of a polynomial. Highest coefficient different from zero *)
-  let get_degree (pol : polynom) =
-    let _, d = is_zero pol in
-    d
+  let get_degree (_, d : polynom) = d
+
+
+  (* Update the degree of a polynomial*)
+  let proper_degree (pol, d : polynom) =
+    let rec loop i =
+      if i = 0
+      then pol , 0
+      else
+        begin
+          if pol.(i) =: zero
+          then loop (i - 1)
+          else pol, i
+        end
+    in
+    loop d
 
 
   (* Evaluate a polynom in a given point, using Horner's rule *)
-  let evaluate_pol (pol : polynom) (pnt : element) =
+  let evaluate_pol (pol, d : polynom) (pnt : element) =
     if pnt =: zero
     then zero
-    else 
+    else
       begin
         let rec loop i acc =
           if i = -1
@@ -49,15 +61,12 @@ struct
               loop (i - 1) acc'
             end
         in
-        loop (get_degree pol) zero
+        loop d zero
       end
 
 
-(* ========================================================== *)
-(* Verify equality of polynomials *)
-  let equal_pols (pol1 : polynom) (pol2 : polynom) =
-    let d1 = get_degree pol1 in
-    let d2 = get_degree pol2 in
+  (* Verify equality of polynomials *)
+  let equal_pols (pol1, d1 : polynom) (pol2, d2 : polynom) =
     let b = (d1 = d2) in
     let rec loop c i =
       if c && i <= d1
@@ -72,12 +81,12 @@ struct
 
 
   (* Verify whether polynomial is linear *)
-  let is_linear (pol : polynom) =
-    get_degree pol = 1
+  let is_linear (_, d : polynom) =
+    d == 1
 
 
-  (* Get the root from a monic linear polynomial *)
-  let get_root (pol : polynom) =
+  (* Get the root from a linear polynomial *)
+  let get_root (pol, _ : polynom) =
     let leading = pol.(1) in
     if leading =: one
     then pol.(0)
@@ -85,28 +94,29 @@ struct
 
 
   (* Verify whether a polynomial has a zero root *)
-  let has_zero_root (pol : polynom) =
+  let has_zero_root (pol, _ : polynom) =
     Array.length pol <> 0 && pol.(0) =: zero
 
 
   (* Extract zero root from the polynomial, i.e. divide the polynomial by x *)
-  let divide_by_x (pol : polynom) =
-    let d = get_degree pol in
-    Array.sub pol 1 d
+  let divide_by_x (pol, d : polynom) =
+    let pol' = Array.sub pol 1 d in
+    proper_degree (pol', (d - 1))
 
- (* Verify whether polynomial is of the form ax^2 + bx + c *)
-  let is_quadratic pol =
-    get_degree pol == 2
+
+  (* Verify whether polynomial is of the form ax^2 + bx + c *)
+  let is_quadratic (pol , d : polynom) =
+    d == 2
 
 
   (* Find roots of quadratic equation ax^2 + bx + c = 0 *)
-  let quadratic pol =
+  let quadratic (pol , d : polynom) =
     let a = pol.(2) in
     let b = pol.(1) in
     let c = pol.(0) in
-    if b =: zero 
-    then 
-      begin    (* Double root sqrt(c/a) *) 
+    if b =: zero
+    then
+      begin    (* Double root sqrt(c/a) *)
         let rec loop i acc =
           if i = w
           then acc

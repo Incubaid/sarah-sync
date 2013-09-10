@@ -20,14 +20,14 @@ let test_chien_search () =
   let fortyfive = (wrap 5) *: (wrap 9) in
   let fourteen =  (wrap 5) +: (wrap 9) in
   let tests = [
-    [|one ; zero ; one|] , [ one ; one ]  ;
-    [|one ; zero ; zero|] , []   ;
-    [|zero ; one ; zero ; one|] ,[zero ; one ; one ]  ; 
-    [|zero ; wrap 5 ; one|], [zero ; wrap 5] ;
-    [|zero ; twentyfive ; zero ; one |] , [zero ; wrap 5 ; wrap 5] ; 
-    [|zero ; twentyseven ; twelve ; one|] , [zero ; wrap 3 ; wrap 9] ;
-    [|twentyseven ; thirtynine; thirteen ; one|] , [wrap 1 ; wrap 3 ; wrap 9] ;
-    [|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|] , [wrap 5 ; wrap 9]
+    ([|one ; zero ; one|], 2 ) , [ one ; one ]  ;
+    ([|one ; zero ; zero|], 0) , []   ;
+    ([|zero ; one ; zero ; one|], 3) ,[zero ; one ; one ]  ; 
+    ([|zero ; wrap 5 ; one|], 2), [zero ; wrap 5] ;
+    ([|zero ; twentyfive ; zero ; one |], 3) , [zero ; wrap 5 ; wrap 5] ; 
+    ([|zero ; twentyseven ; twelve ; one|], 3) , [zero ; wrap 3 ; wrap 9] ;
+    ([|twentyseven ; thirtynine; thirteen ; one|], 3) , [wrap 1 ; wrap 3 ; wrap 9] ;
+    ([|fortyfive *: (wrap 2); fourteen *: (wrap 2) ; wrap 2|], 2) , [wrap 5 ; wrap 9]
   ]
   in 
   let test_one (poly, roots) =
@@ -36,3 +36,8 @@ let test_chien_search () =
     OUnit.assert_equal (List.sort compare answer) (List.sort compare roots) ~msg
   in
   List.iter test_one tests
+
+
+let suite = "Set Reconciliation" >::: [ "test_chien" >:: test_chien_search]
+
+let _ = OUnit.run_test_tt suite
