@@ -7,11 +7,6 @@ open Cmdliner
 open Camltc
 
 
-let host = "127.0.0.1"
-let port = 9000
-let soc = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0         (* Server socket *)
-let addr = Unix.ADDR_INET (Unix.inet_addr_of_string host, port)   (* Address *)
-
 let hash_function = function l ->
   Sha1.to_hex (Sha1.string l)
 
@@ -62,15 +57,17 @@ let load_database_cmd =
 
 
 (* Server *)
-let server db field_size =
+let server db host port field_size =
   Lwt_main.run
     (
+      let soc = Lwt_unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in           (* Server socket *)
+      let addr = Unix.ADDR_INET (Unix.inet_addr_of_string host, port) in     (* Address *)
       match field_size with
-      | "auto" -> 
+      | "auto" ->
         let module N = Network_interaction_close_bound.Sync_with_network in
         Hotc.create db [] >>= fun db ->
         N.server soc addr db hash_function
-      | s -> 
+      | s ->
         let f_w = int_of_string s in
         let module F = FiniteField.Make(struct
           let w = f_w
@@ -85,7 +82,15 @@ let server db field_size =
 let server_cmd =
   let db =
     let doc = "Database to use in syncing. The database contains the information available on the server." in
-    Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DB_NAME" ~doc)
+    Arg.(required & pos 0 (some string) None & info [] ~docv:"DB_NAME" ~doc)
+  in
+  let host =
+    let doc = "IP-address of host." in
+    Arg.(required & pos 1 (some string) None & info [] ~docv:"HOST" ~doc)
+  in
+  let port =
+    let doc = "Port to use." in
+    Arg.(required & pos 2 (some int) None & info [] ~docv:"PORT" ~doc)
   in
   let field_size =
     let doc = "Size w of the finite field GF(2^w)." in
@@ -96,14 +101,15 @@ let server_cmd =
     `S "DESCRIPTION" ;
     `P "Sets up the server, with a specified database at its disposal."]
   in
-  Term.(pure server $ db $ field_size ),
+  Term.(pure server $ db $ host $ port $ field_size ),
   Term.info "server" ~doc ~man
 
 
 (* Client *)
-let client file dest partition field_size block_size=
+let client file dest host port partition field_size block_size=
   Time.time Lwt_main.run
     (
+      let addr = Unix.ADDR_INET (Unix.inet_addr_of_string host, port) in     (* Address *)
       let partition_function =
         match partition with
         | "words" -> words
@@ -113,10 +119,10 @@ let client file dest partition field_size block_size=
         | _ -> blocks ~size:block_size
       in
       match field_size with
-      | "auto" -> 
+      | "auto" ->
         let module N = Network_interaction_close_bound.Sync_with_network in
         N.sync_with_server addr file partition_function hash_function dest
-      | s -> 
+      | s ->
               let f_w = int_of_string s in
               let module F = FiniteField.Make(struct
                 let w = f_w
@@ -135,9 +141,17 @@ let client_cmd =
     let doc = "Destination file." in
     Arg.(required & pos 1 (some string) None & info [] ~docv:"DEST" ~doc)
   in
+  let host =
+    let doc = "IP-address of host." in
+    Arg.(required & pos 2 (some string) None & info [] ~docv:"HOST" ~doc)
+  in
+  let port =
+    let doc = "Port to use." in
+    Arg.(required & pos 3 (some int) None & info [] ~docv:"PORT" ~doc)
+  in
   let partition =
     let doc = "Partition function to use." in
-    Arg.(required & pos 2 (some string) None & info [] ~docv:"PARTS" ~doc)
+    Arg.(required & pos 4 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let field_size =
     let doc = "Size w of the finite field GF(2^w)." in
@@ -152,7 +166,7 @@ let client_cmd =
     `S "DESCRIPTION" ;
     `P "Sets up the client. A file to reconstruct at a specified location is provided."]
   in
-  Term.(pure client $ file $ dest $ partition $ field_size $ block_size),
+  Term.(pure client $ file $ dest $ host $ port $ partition $ field_size $ block_size),
   Term.info "client" ~doc ~man
 
 
@@ -175,7 +189,7 @@ let local file_1 file_2 dest partition field_size block_size db_name =
           in
           Time.time f dest
         end
-      | s -> 
+      | s ->
         begin
           let f_w = int_of_string s in
           let module F = FiniteField.Make(struct
@@ -210,7 +224,7 @@ let local file_1 file_2 dest partition field_size block_size db_name =
           in
           Time.time f db
         end
-      | s -> 
+      | s ->
         begin
           let f_w = int_of_string s in
           let module F = FiniteField.Make(struct
@@ -218,7 +232,7 @@ let local file_1 file_2 dest partition field_size block_size db_name =
           end)
           in
           let module Sync = Sync_two_files.Syncing(F) in
-          let f = 
+          let f =
             match partition with
             | "words" -> Sync.sync_with_words file_1 file_2 hash_function dest
             | "blocks" -> Sync.sync_with_blocks file_1 file_2 block_size hash_function dest
@@ -278,7 +292,6 @@ let default_cmd =
   in
   Term.(ret (pure (`Ok ()) )) ,
   Term.info "default" ~doc ~man
-
 
 
 (* Main *)
