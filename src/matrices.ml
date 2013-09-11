@@ -85,8 +85,9 @@ struct
               let tmp = mat.(k) in
               let () = mat.(k) <- mat.(i_max) in
               let () = mat.(i_max) <- tmp in
+              let spil = mat.(k).(k) in
               for i = k + 1 to m - 1 do
-                let factor = mat.(i).(k) /: mat.(k).(k) in
+                let factor = mat.(i).(k) /: spil in
                 for j = k + 1 to n - 1 do
                   mat.(i).(j) <- mat.(i).(j) -: ( mat.(k).(j) *: factor )
                 done ;

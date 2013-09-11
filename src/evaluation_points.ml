@@ -47,7 +47,7 @@ struct
           | x :: xs ->
             if i = n
             then acc
-            else 
+            else
               begin
                 let acc' = x :: acc in
                 loop xs acc' (i + 1)
@@ -56,10 +56,22 @@ struct
         List.rev (loop list [] 0)
       end
 
+
   (* Determine the maximal value of m and the maximum number of extra evaluation points *)
   let get_max_vals size_1 size_2 =
     let k = 1 in     (* CHANGE THIS *)
     (size_1 + size_2, k)
+
+
+  (* Arithmetic mean *)
+  let arith_mean a b =
+      (a + b) / 2
+
+
+  (* Geometric mean *)
+  let geo_mean a b =
+      let product = float_of_int (a * b) in
+      int_of_float (ceil (sqrt product))
 
 
   (* Determine an upper bound on the number of sample points *)
@@ -69,15 +81,17 @@ struct
       then 1
       else abs delta
     in
-    let rec search min max =
-      if max < min
+    let init_half = arith_mean init_min init_max in
+
+    let rec search min half =
+      if init_max < min
       then raise Unable_to_find_good_m
       else
         begin
-          if min = max
+          if min = init_max
           then
             begin
-              let () = Printf.printf "Min is %i. Max is %i\n%!" min max in
+              let () = Printf.printf "Min is %i. Max is %i\n%!" min init_max in
               let cfs_num, cfs_denom = S.interpolation_B (take min eval_pts) (take min rat_vals) delta in
               min, cfs_num, cfs_denom
             end
@@ -88,25 +102,25 @@ struct
                 then min + 1
                 else min
               in
-              if good_min = max
+              if good_min = init_max
               then
                 begin
-                  let () = Printf.printf "Goodmin is %i. Max is %i\n%!" good_min max in
+                  let () = Printf.printf "Goodmin is %i. Max is %i\n%!" good_min init_max in
                   let cfs_num, cfs_denom = S.interpolation_B (take good_min eval_pts) (take good_min rat_vals) delta in
                   good_min, cfs_num, cfs_denom
                 end
               else
                 begin
                   let mid =
-                    (*let mid' = (min + max) / 2 in
-                    if (mid' - delta) land 1 <> 0   (* Ensure same parity *)
-                    then mid' + 1
-                    else mid' *)
-                    let product = float_of_int (min * max) in
-                    int_of_float (ceil (sqrt product))
+                    geo_mean good_min half
+                  in
+                  let half' =
+                    if mid - good_min < 10
+                    then arith_mean half init_max
+                    else half
                   in
                   try
-                    let () = Printf.printf "Considering m: %i. Max is %i\n%!" good_min max in
+                    let () = Printf.printf "Considering m: %i. Max is %i\n%!" good_min init_max in
                     let cfs_num, cfs_denom = S.interpolation_B (take good_min eval_pts) (take good_min rat_vals) delta in
                     let ourNumVals = List.map (S.P.evaluate_pol cfs_num) extra_pts in
                     let ourDenomVals = List.map (S.P.evaluate_pol cfs_denom) extra_pts in
@@ -118,16 +132,17 @@ struct
                     else
                       begin
                         let new_min = mid in
-                        search new_min max
+                        search new_min half'
                       end
                   with S.InterPol.M.System_no_solution ->
                     let new_min = mid in
-                    search new_min max
+                    search new_min half'
                 end
             end
         end
     in
-    search init_min init_max
+    search init_min init_half
+
 
   (* Determine a close upper bound on the number of evaluation points needed by the reconciliation algorithm
      size_1: size of the first set
@@ -136,18 +151,20 @@ struct
      s2: second set *)
   let findM_server size_1 chi1 extra1 (s2 : S.set) =
     let delta = size_1 - List.length s2 in
-    let initMin =
+    let init_min =
       if abs delta = 0
       then 1
       else abs delta
     in
-    let initMax = List.length chi1 in
-    let rec search min max =
-      if max < min
+    let init_max = List.length chi1 in
+    let init_half = arith_mean init_min init_max in
+
+    let rec search min half =
+      if init_max < min
       then raise Unable_to_find_good_m
       else
         begin
-          if min = max
+          if min = init_max
           then
             begin
               let pts = evalPts min in
@@ -161,7 +178,7 @@ struct
                 then min + 1
                 else min
               in
-              if good_min = max
+              if good_min = init_max
               then
                 begin
                   let pts = evalPts good_min in
@@ -171,12 +188,12 @@ struct
               else
                 begin
                   let mid =
-                   (* let mid' = (min + max) / 2 in
-                    if (mid' - delta) land 1 <> 0   (* Ensure same parity *)
-                    then mid' + 1
-                    else mid' *)
-                    let product = float_of_int (min * max) in
-                    int_of_float (ceil (sqrt product))
+                    geo_mean good_min half
+                  in
+                  let half' =
+                    if mid - good_min < 10
+                    then arith_mean half init_max
+                    else half
                   in
                   let pts = evalPts good_min in
                   try
@@ -197,16 +214,16 @@ struct
                     else
                       begin
                         let new_min = mid in
-                        search new_min max
+                        search new_min half'
                       end
                   with S.InterPol.M.System_no_solution ->
                     let new_min = mid in
-                    search new_min max
+                    search new_min half'
                 end
             end
         end
     in
-    search initMin initMax
+    search init_min init_half
 
 
 end

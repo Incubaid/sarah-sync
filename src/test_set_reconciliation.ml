@@ -2,14 +2,15 @@
 
 open OUnit
 open FiniteField
-open Set_reconciliation_under_constr
-open Evaluation_points_under_constr
+open Set_reconciliation
+open Evaluation_points
 
 module S1 = SetReconciliation(GF128)
 module EP1 = EvaluationPts(GF128)
 
 module S2 = SetReconciliation(GF1024)
 module EP2 = EvaluationPts(GF1024)
+
 
 let test_set_reconc () =
   let tests = [      (* (set1 , set2 , delta1, identifier) *)
@@ -23,18 +24,7 @@ let test_set_reconc () =
   let test_one (set1, set2, only_set1, id) =
     let () = Printf.printf "============================================\n%!" in
     let () = Printf.printf "Performing %s\n%!" id in
-  
-    (* Test with Chien search and old findM *)
-    let m = EP1.findM_old_2 set1 set2 in
-    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let pts = EP1.evalPts m in
-    let m1 = List.length set1 in
-    let chi_1 = List.map (S1.CharPoly.evalCharPoly set1) pts in
-    let sols = S1.reconcile m1 chi_1 set2 pts in
-    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols) (List.length only_set1) id in
-    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ~msg ;
 
-    (* Test with BTA and new findM *)
     let size_1 = List.length set1 in
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
@@ -43,21 +33,41 @@ let test_set_reconc () =
     let rat_vals = S1.get_rational_values set1 set2 eval_pts in
     let extra_pts = EP1.extraEvalPts k in
     let actual_vals = S1.get_rational_values set1 set2 extra_pts in
-    let m, cfs_num, cfs_denom = EP1.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
+    let m, ((cfs_num, dN) as c_n), ((cfs_denom, dD) as c_d) = EP1.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let sols_BTA = 
+
+    (* Copy of coefficients, because Chien overwrites the arrays *)
+    let cfs_num_cp = (Array.copy cfs_num, dN) in
+    let cfs_denom_cp = (Array.copy cfs_denom, dD) in
+
+
+    (* Test with Chien search *)
+    let () = Printf.printf "Testing Chien\n%!" in
+    let sols_ch =
       if m = 0
       then []
-      else S1.reconcile_D cfs_num cfs_denom
+      else S1.reconcile c_n c_d
     in
-    let msg_b = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols) (List.length only_set1) id in
-    OUnit.assert_equal (List.sort compare sols_BTA) (List.sort compare only_set1) ~msg:msg_b ;
+    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols_ch) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols_ch) (List.sort compare only_set1) ~msg ;
+
+
+    (* Test with BTA *)
+    let () = Printf.printf "Testing BTA\n%!" in
+    let sols_BTA =
+      if m = 0
+      then []
+      else S1.reconcile_BTA cfs_num_cp cfs_denom_cp
+    in
+    let msg_b = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols_BTA) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols_BTA) (List.sort compare only_set1) ~msg:msg_b
 
   in
+  let open GF128 in
   List.iter test_one
     ( List.map
         (fun (a,b,c,d) ->
-          (List.map GF128.wrap a, List.map GF128.wrap b, List.map GF128.wrap c, d)
+          (List.map wrap a, List.map wrap b, List.map wrap c, d)
         )
         tests )
 
@@ -98,17 +108,7 @@ let test_set_reconc_bigger () =
     let () = Printf.printf "============================================\n%!" in
     let () = Printf.printf "Performing %s\n%!" id in
 
-    (* Test with Chien and old findM *)
-    let m = EP2.findM_old_2 set1 set2 in
-    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let pts = EP2.evalPts m in
-    let m1 = List.length set1 in
-    let chi_1 = List.map (S2.CharPoly.evalCharPoly set1) pts in
-    let sols = S2.reconcile m1 chi_1 set2 pts in
-    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s.\n" (List.length sols) (List.length only_set1) id in
-    OUnit.assert_equal (List.sort compare sols) (List.sort compare only_set1) ~msg ; 
 
-    (* Test with BTA and new findM *)
     let size_1 = List.length set1 in
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
@@ -117,21 +117,38 @@ let test_set_reconc_bigger () =
     let rat_vals = S2.get_rational_values set1 set2 eval_pts in
     let extra_pts = EP2.extraEvalPts k in
     let actual_vals = S2.get_rational_values set1 set2 extra_pts in
-    let m, cfs_num, cfs_denom = EP2.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
+    let m, ((cfs_num, dN) as c_n), ((cfs_denom, dD) as c_d) = EP2.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
-    let sols_BTA = 
+
+    (* Copy of coefficients, because Chien overwrites the arrays *)
+    let cfs_num_cp = (Array.copy cfs_num, dN) in
+    let cfs_denom_cp = (Array.copy cfs_denom, dD) in
+
+    (* Test with Chien search *)
+    let () = Printf.printf "Testing Chien\n%!" in
+    let sols_ch =
       if m = 0
       then []
-      else S2.reconcile_D cfs_num cfs_denom
+      else S2.reconcile c_n c_d
     in
-    let msg_b = Printf.sprintf "Numerator: found %i elements, needed %i in %s.\n" (List.length sols) (List.length only_set1) id in
+    let msg = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols_ch) (List.length only_set1) id in
+    OUnit.assert_equal (List.sort compare sols_ch) (List.sort compare only_set1) ~msg ;
+
+    (* Test with BTA *)
+    let () = Printf.printf "Testing BTA\n%!" in
+     let sols_BTA =
+      if m = 0
+      then []
+      else S2.reconcile_BTA cfs_num_cp cfs_denom_cp
+    in
+    let msg_b = Printf.sprintf "Numerator: found %i elements, needed %i in %s\n" (List.length sols_BTA) (List.length only_set1) id in
     OUnit.assert_equal (List.sort compare sols_BTA) (List.sort compare only_set1) ~msg:msg_b
 
   in
+  let open GF1024 in
   List.iter test_one
     ( List.map
         (fun (a,b,c, d) ->
-          (List.map GF1024.wrap a, List.map GF1024.wrap b, List.map GF1024.wrap c, d)
+          (List.map wrap a, List.map wrap b, List.map wrap c, d)
         )
         tests )
-
