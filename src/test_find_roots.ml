@@ -37,8 +37,3 @@ let test_roots () =
     OUnit.assert_equal (List.sort compare answer) (List.sort compare rts) ~msg
   in
   List.iter test_one tests
-
-
-let suite = "Set Reconciliation" >::: [ "test_bta" >:: test_roots]
-
-let _ = OUnit.run_test_tt suite

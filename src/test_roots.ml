@@ -42,8 +42,3 @@ let test_compare () =
     OUnit.assert_equal (List.sort compare ch) (List.sort compare bta) ~msg
   in
   List.iter test_one tests
-
-
-let suite = "Set Reconciliation" >::: [ "test_ch_vs_bta" >:: test_compare]
-
-let _ = OUnit.run_test_tt suite
