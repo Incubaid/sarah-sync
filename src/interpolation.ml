@@ -1,4 +1,5 @@
-(* Interpolation *)
+(* Interpolation.
+   Determines an interpolating rational function, i.e. the coefficients of numerator and denominator. *)
 
 open FiniteField
 open Matrices
@@ -19,7 +20,7 @@ struct
 
   (* System for the interpolation.
      m = number of evalution points,  delta = |set1| - |set2| *)
-  let constructSystem (points : element list) (values : element list) m delta =
+  let construct_system (points : element list) (values : element list) m delta =
     let d1 = (m + delta) / 2 in
     let d2 = (m - delta) / 2 in
     if d1 + d2 <> m
@@ -92,12 +93,14 @@ struct
       end
 
 
-  (* Actual interpolation. Solves the system with Gaussian elimination. *)
+  (* Actual interpolation.
+     Constructs the system and solves it with Gaussian elimination.
+     Returns the coefficients of numerator and denominator *)
   let interpolate (points : element list) (values : element list) m delta =
     let () = Printf.printf "Constructing system for interpolation.\n%!" in
-    let sys, d1, d2 = constructSystem points values m delta in
+    let sys, d1, d2 = construct_system points values m delta in
     let () = Printf.printf "Solving system for interpolation.\n%!" in
-    let solution =  M.solveSystem sys in
+    let solution =  M.solve_system sys in
     let cfsN = Array.init (d1 + 1)
       ( fun i ->
         if i < d1
@@ -108,9 +111,9 @@ struct
         if i < d2
         then solution.(d1 + i)
         else one ) in    (* Coefficients denominator *)
-    let cfsNum = P.proper_degree (cfsN, Array.length cfsN - 1) in
-    let cfsDenom = P.proper_degree (cfsD, Array.length cfsD - 1) in
-    cfsNum , cfsDenom
+    let cfs_num = P.proper_degree (cfsN, Array.length cfsN - 1) in
+    let cfs_denom = P.proper_degree (cfsD, Array.length cfsD - 1) in
+    cfs_num , cfs_denom
 
 
 end

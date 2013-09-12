@@ -1,4 +1,5 @@
-(* Computing the greatest common divisor of two polynomials with coefficients in a finite field *)
+(* Computing the greatest common divisor of two polynomials with coefficients in a finite field.
+   In the first step, one of the two will be a trace-function and this is readily exploited. *)
 
 open FiniteField
 open Polynom
@@ -66,7 +67,7 @@ struct
       end
 
 
-  (* Make a polynom monic, by dividing out the leading coefficient *)
+  (* Make a polynomial monic, by dividing out the leading coefficient *)
   let make_monic (pol, d : polynom) =
     let leading = pol.(d) in
     if leading =: one
@@ -81,7 +82,7 @@ struct
   (* Get coefficient. Used in the division of a trace function by a polynomial. *)
   let get_coeff c quot (denom, deg_d : polynom) =
     let m = List.length quot in
-    let rec get curr i q_list =    (* i = current position in the quotient *)
+    let rec get curr i q_list =
       if i = m
       then curr
       else
@@ -105,7 +106,7 @@ struct
   (* Get coefficient of the remainder. Used in the division of a trace function by a polynomial. *)
   let get_coeff_rem c quot (denom, deg_d : polynom) offset=
     let m = List.length quot in
-    let rec get curr i q_list =    (* i = current position in the quotient *)
+    let rec get curr i q_list =
       if i = m
       then curr
       else
@@ -131,7 +132,7 @@ struct
     let rec loop pow =
       if n == (1 lsl pow)
       then pow
-      else 
+      else
         if n > (1 lsl pow)
         then -1
         else loop (pow - 1)
@@ -227,16 +228,15 @@ struct
         loop []
 
 
-
   (* Find the unique monic gcd of a polynomial and the trace-function.
-     The polynomial will never be a constant*)
+     The polynomial will never be a constant. *)
   let gcd_with_trace ((pol, deg) as p : polynom) trace =
     if deg = 0
     then failwith "Constant pol. (should not happen)"
     else
       begin
         (* Handle the trace function.
-        Takes two steps when the polynomial is of higher degree than the trace.*)
+           This takes two steps when the polynomial is of higher degree than the trace.*)
         let deg_tr = 1 lsl (w - 1) in
         let p1_init, p2_init =
           if deg_tr >= deg

@@ -19,20 +19,20 @@ struct
   exception System_no_solution
 
   (* Is matrix empty? *)
-  let isEmpty mat =
+  let is_empty mat =
     Array.length mat == 0 || Array.length mat.(0) == 0
 
 
   (* Verify whether all rows have the same number of columns *)
-  let isValid mat =
-    if isEmpty mat
+  let is_valid mat =
+    if is_empty mat
     then raise Empty_matrix
     else
       let m = Array.length mat in
       let n = Array.length mat.(0) in
       let rec loop row =
         if row == m   (* All rows have been checked *)
-        then true 
+        then true
         else
           let dim = Array.length mat.(row) in
           if dim == n
@@ -74,7 +74,7 @@ struct
     let m, n = dimensions mat in
     let rec loop k =
       if k = m
-      then () 
+      then ()
       else
         begin
           let i_max = index_max_element k k (m-1) mat in
@@ -130,9 +130,9 @@ struct
         end
     in
     get init_res last_kol
-  
 
-  (* Backward substitution. Takes zero-rows and invalid systems into account. 
+
+  (* Backward substitution. Takes zero-rows and invalid systems into account.
      Once one valid row has been found, no invalid or zero-rows can occur anymore. *)
   let back_subst (mat : matrix) =
     let m,n = dimensions mat in
@@ -168,12 +168,12 @@ struct
 
 
   (* Solve a given system. Gauss elimination, followed by backward substitution. *)
-  let solveSystem (system : matrix) =
-    if isEmpty system
+  let solve_system (system : matrix) =
+    if is_empty system
     then raise Empty_matrix
     else
       begin
-        if isValid system
+        if is_valid system
         then
           begin
             let () = gauss_elim system in

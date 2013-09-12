@@ -1,4 +1,6 @@
-(* Basic operations on polynomials *)
+(* Basic operations on polynomials.
+   Polynomials are represented by an array of coefficients, together with their degree.
+   This provides easy access to the degree, which is often needed. *)
 
 open FiniteField
 
@@ -10,7 +12,10 @@ struct
   type element = t
   type polynom = element array * int   (* Coeffs, ordered according to increasing powers of x. Second element is the degree. *)
 
-  (* Verify whether a polynom is zero. *)
+
+  (* Verify whether a polynom is zero.
+     The optional argument start is the starting position from were to look for non-zero elements.
+     This option is used in the matrix module, to verify whether a row is invalid. *)
   let is_zero ?start (pol, d : polynom)  =
     let rec loop i =
       if i = 0
@@ -31,7 +36,7 @@ struct
   let get_degree (_, d : polynom) = d
 
 
-  (* Update the degree of a polynomial*)
+  (* Update the degree of a polynomial *)
   let proper_degree (pol, d : polynom) =
     let rec loop i =
       if i = 0
@@ -80,7 +85,7 @@ struct
     loop b 0
 
 
-  (* Verify whether polynomial is linear *)
+  (* Verify whether the polynomial is linear *)
   let is_linear (_, d : polynom) =
     d == 1
 

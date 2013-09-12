@@ -1,4 +1,5 @@
-(* Finding roots of a polynomial in a finite field *)
+(* Finding roots of a polynomial in a finite field.
+   This module uses the Berlekamp Trace Algorithm (BTA). *)
 
 open FiniteField
 open Gcd
@@ -18,20 +19,20 @@ struct
   let largest = exp primEl (w - 1)
 
 
-  (* Get the 'next' element from the basis (1, alpha, alpha^2, ..., alpha^(w-1)) *)
+  (* Get the next element from the basis (1, alpha, alpha^2, ..., alpha^(w-1)) *)
   let next_basis_el current =
     if current =: largest
     then one
     else current *:  primEl
 
 
-  (* Trace function Tr (x) *)
+  (* Trace function Tr (x) = x + x^2 + x^(2^2) + ... + x^(2^(w-1)) *)
   let init_trace () =
     Array.make w one
 
 
-  (* Update trace function to be evaluated in the next basis element.
-     Returns this basis element, for future reference.*)
+  (* Update trace function so that it is evaluated in the next basis element.
+     Returns this basis element, for future reference. *)
   let update_trace trace b =
     let b' = next_basis_el b in
     if b' = one
@@ -59,7 +60,8 @@ struct
       end
 
 
-  (* Find all roots of a polynomial, using Tr(b.x). *)
+  (* Find all roots of a polynomial.
+     BTA algorithm *)
   let roots (pol : polynom) =
     let rec aux rts ((_, d) as p) =
       if d = 0
@@ -86,7 +88,7 @@ struct
                   end
                 else
                   begin
-                    let trace = init_trace () in (* Tr(x) *)
+                    let trace = init_trace () in
                     let rec factorize f b =
                       let p1 = G.gcd_with_trace f trace in
                       if G.P.get_degree p1 = 0 || G.P.equal_pols p1 f   (* No good b *)

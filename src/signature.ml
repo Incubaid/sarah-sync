@@ -5,14 +5,15 @@ open Camltc
 open Database_interaction
 
 
-(* Creation of a new database in the temporary directory*)
+(* Creation of a new database in the temporary directory *)
 let get_new_name () = Filename.temp_file "signature" ".db"
 
 let init_database () =
   let name = get_new_name () in
   Hotc.create name []
 
-(* Creation of a new database with a given name*)
+
+(* Creation of a new database with a given name *)
 let database name =
   Hotc.create name []
 
@@ -35,7 +36,8 @@ let all_keys db =
   Database_interaction.keys db
 
 
-(* Create signature and return the list of keys *)
+(* Create signature and return the list of keys.
+   It is ensured that all keys point to an existing file. *)
 let commit_info info_list db =
   Lwt_list.iter_s (add_to_database ~db) info_list >>= fun () ->
   all_keys db

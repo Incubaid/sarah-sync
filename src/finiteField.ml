@@ -18,7 +18,7 @@ module type F = sig
   val exp : t -> int -> t   (* Exponentiation *)
   val trace : t -> t
   val primEl : t
-  val k : t   (* Element with trace(k) = one *)
+  val k : t                 (* Element with trace(k) = one *)
   val print : t-> unit
   val (=:) : t-> t -> bool
   val wrap : int -> t
@@ -40,11 +40,11 @@ module Make(P:FIELD_PARAM): FINITEFIELD = struct
   let (=:) = (==) (* possible for ints *)
   let (+:) = (lxor)
   let (-:) = (lxor)
-  let ( *: ) a b = 
+  let ( *: ) a b =
     if a =: zero || b =: zero
     then zero
     else Galois.single_multiply a b P.w
-  let (/:) a b = 
+  let (/:) a b =
     if a =: zero
     then zero
     else Galois.single_divide a b P.w

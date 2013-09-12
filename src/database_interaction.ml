@@ -1,4 +1,6 @@
-(* Interaction with database *)
+(* Interaction with database.
+   Allows to add and query entries and get a list of valid keys.
+   The keys are sha1-hashes, the values are an encoded format of a second hash (md5) and the location of the block. *)
 
 open Lwt
 open Camltc
@@ -13,9 +15,9 @@ let construct_value hash_2 begin_pos size file =
   Printf.sprintf "%32s%016x%016x%S\n" hash_2 begin_pos size file
 
 
-(* 'Decode' the information in the database *)
+(* Decode the information in the database *)
 let decode value =
-  Scanf.sscanf value "%32s%016x%016x%S" 
+  Scanf.sscanf value "%32s%016x%016x%S"
     (fun h_2 p s f -> h_2, (p, s, f))
 
 
@@ -93,9 +95,9 @@ let keys db =
 
 
 (* Find the number of bindings of a given key in association list *)
-let count_bindings a_list key = 
-  let rec loop l c = 
-    match l with 
+let count_bindings a_list key =
+  let rec loop l c =
+    match l with
     | [] -> c
     | (k,v) :: xs ->
       let c' =
@@ -108,7 +110,8 @@ let count_bindings a_list key =
   loop a_list 0
 
 
-(* Add extra information to database, if required. *)
+(* Add extra information to database, if required.
+   For each pair of (key, hash_2) at most 2 locations are stored. *)
 let extra_loc key hash_2 begin_pos size file db =
   let value = construct_value hash_2 begin_pos size file in
   let curr_v = Bdb.get db key in
@@ -124,7 +127,7 @@ let extra_loc key hash_2 begin_pos size file db =
 
 (* Add information to the database.
    Key : hash.
-   Value : "begin_possizefile\n" *)
+   Value : "hash_2begin_possizefile\n" *)
 let add hash hash_2 begin_pos size file db =
   Hotc.transaction db
     (
@@ -142,7 +145,7 @@ let add hash hash_2 begin_pos size file db =
     )
 
 
-(* Get the first valid location corresponding to a given key and having the correct value of the second hash. 
+(* Get the first valid location corresponding to a given key and having the correct value of the second hash.
    (begin_pos, end_pos, file) *)
 let get_location key hash_2 db =
   Hotc.transaction db

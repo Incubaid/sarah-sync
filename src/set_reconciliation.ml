@@ -46,45 +46,43 @@ struct
     InterPol.interpolate evalPts ratVals m delta
 
 
-  (* Interpolation: alternative for the function above *)
+  (* Interpolation: alternative for the function above.
+     Use this one when the rational values are already available. *)
   let interpolation_B eval_pts rat_vals delta =
     let m = List.length rat_vals in
     InterPol.interpolate eval_pts rat_vals m delta
 
 
-  (* Extracting proper elements of two lists *)
-  let rec find_proper_els list1 list2 proper = 
-	  match list1, list2 with
-	  | (x::xs), (y::ys) ->
-	    if x = y
+  (* Extracting proper elements of two lists.
+     Used to find proper roots of numerator and denominator. *)
+  let rec find_proper_els list1 list2 proper =
+      match list1, list2 with
+      | (x::xs), (y::ys) ->
+        if x = y
             then find_proper_els xs ys proper
-	    else 
-	      begin
-		if x < y 
-		then find_proper_els xs (y::ys) (x::proper)
-		else find_proper_els (x::xs) ys proper
-	      end
-	  | rest1, rest2  -> List.append rest1 proper
+        else
+          begin
+        if x < y
+        then find_proper_els xs (y::ys) (x::proper)
+        else find_proper_els (x::xs) ys proper
+          end
+      | rest1, rest2  -> List.append rest1 proper
 
 
-  (* Reconciliation. Ensure that the roots in numerator and denominator are all different. *)
+  (* Reconciliation, with Chien search to find the roots.
+     Ensures that the roots in numerator and denominator are all different. *)
   let reconcile cfs_num cfs_denom =
     let roots_num = Chien.chienSearch cfs_num in
     let roots_denom = Chien.chienSearch cfs_denom in
-    let () = Printf.printf "Extracting proper roots.\n%!" in
-    let result = find_proper_els roots_num roots_denom [] in
-    Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
-    result
+    find_proper_els roots_num roots_denom []
 
 
-  (* Reconciliation, with BTA to find the roots *)
+  (* Reconciliation, with BTA to find the roots.
+     Ensures that the roots in numerator and denominator are all different. *)
   let reconcile_BTA cfs_num cfs_denom =
     let roots_num = List.sort compare (BTA.roots cfs_num) in
     let roots_denom = List.sort compare (BTA.roots cfs_denom) in
-    let () = Printf.printf "Extracting proper roots.\n%!" in
-    let result = find_proper_els roots_num roots_denom [] in
-    Printf.printf "Removed %i root(s).\n%!" (List.length roots_num - List.length result) ;
-    result
+    find_proper_els roots_num roots_denom []
 
 
 end

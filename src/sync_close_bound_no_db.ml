@@ -13,7 +13,7 @@ module Syncing =
 struct
 
   type filename = string
- 
+
   (* Type of messages being sent *)
   type message = Hash of string * int    (* Hash and the block it identifies *)
                  | Original of string
@@ -144,32 +144,3 @@ struct
     reconstruct msg prts1 l2 location hash_function nr_sent
 
 end
-
-(*
-(* ========== Tests ========== *)
-
-
-module Sync = Syncing ;;
-
-
-(* Testen voor fisher.txt *)
-let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in
-let () = Printf.printf "========================================\n%!" in
-let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in
-let () = Printf.printf "========================================\n%!" in
-let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in
-let () = Printf.printf "========================================\n%!" in
-let outfile4 = "/home/spare/Documents/Output/test4" in
-let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
-print_string "Done.\n" ;;
-
-
-(* Testen voor big.bmp *)
-let () = Printf.printf "========================================\n%!" in
-let outfile = "/home/spare/Documents/Output/test_big" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
-print_string "Done.\n"
-*)

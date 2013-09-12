@@ -1,4 +1,5 @@
-(* Set reconciliation with network-interaction *)
+(* Set reconciliation with network-interaction.
+   The size of the finite field is fixed beforehand. *)
 
 open Lwt
 open FiniteField
@@ -22,7 +23,7 @@ struct
 
   (* ====== CLIENT ====== *)
 
-  (* Sending extra blocks *)
+  (* Sending extra blocks, because they were not present on the server after all. *)
   let send_extra_blocks ic oc info_client =
     let rec loop () =
       Llio.input_int ic >>= fun i ->

@@ -1,4 +1,4 @@
-(* Constructing set of elements in a finite field *)
+(* Constructing a set of elements of a finite field *)
 
 open FiniteField
 
@@ -8,7 +8,7 @@ struct
 
   open F
 
-  (* Mapping to F_q met q = 2^w*)
+  (* Mapping a hash to F_q with q = 2^w*)
   let map_to_field hash =
     let maxbits = w - 1 in
     let length = String.length (Printf.sprintf "%X" (1 lsl maxbits)) in

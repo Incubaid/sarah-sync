@@ -8,8 +8,6 @@ module EvaluationPts =
 struct
   open F
 
-  type element = t
-
   exception Unable_to_find_good_m
 
   module S = SetReconciliation(F)
@@ -23,8 +21,10 @@ struct
     in
     getPoints (q - 1) m
 
-  (* Determine extra evaluation points, used in the function to determine an upper bound on m.
-     k: number of extra points requested. Point will be: [2^(w-1) + 1, 2^(w-1) + 2, ...] *)
+
+  (* Determine extra evaluation points.
+     Used in the function to determine an upper bound on m.
+     k: number of extra points requested. Points will be: [2^(w-1) + 1, 2^(w-1) + 2, ...] *)
   let extraEvalPts k =
     let first = (1 lsl (w - 1)) + 1 in
     let rec getPoints start len =
@@ -63,12 +63,12 @@ struct
     (size_1 + size_2, k)
 
 
-  (* Arithmetic mean *)
+  (* Arithmetic mean of two values *)
   let arith_mean a b =
       (a + b) / 2
 
 
-  (* Geometric mean *)
+  (* Geometric mean of two values *)
   let geo_mean a b =
       let product = float_of_int (a * b) in
       int_of_float (ceil (sqrt product))
@@ -144,7 +144,7 @@ struct
     search init_min init_half
 
 
-  (* Determine a close upper bound on the number of evaluation points needed by the reconciliation algorithm
+  (* Determine a close upper bound on the number of evaluation points needed by the reconciliation algorithm, version used by the server.
      size_1: size of the first set
      chi1: evaluation of the characteristic polynomial of the first set in all sample points
      extra1: evaluation of the characteristic polynomial of the first set in all extra points

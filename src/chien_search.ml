@@ -1,4 +1,5 @@
-(* Module to perform Chien search *)
+(* Module to perform Chien search.
+   Chien search is an algorithm to find roots of a given polynomial over a finite field. *)
 
 open FiniteField
 open Polynom
@@ -11,11 +12,10 @@ struct
   module P = Polynom(F)
 
   type element = P.element
-  type polynom = P.polynom     (* Coefficients *)
-  type roots = element list    (* Roots *)
+  type polynom = P.polynom     (* Coefficients ordered according to ascending powers of x. *)
 
 
-  (* Synthetic division of a polynomial by (x-a) *)
+  (* Synthetic division of a polynomial by (x-a). *)
   let synth_div (pol, t : polynom) (a : element) =
     let rec loop i el prev =
       if i = -1
@@ -33,9 +33,10 @@ struct
     P.proper_degree (pol, t - 1)
 
 
-  (* Chien-search algorithm. Determines multiplicity of roots.
-     Coefficients should be ordered according to ascending powers of x.
-     Counts roots, so the procedure can terminate when all roots are found. *)
+  (* Chien-search algorithm.
+     After a root r has been detected, the polynomial is divided by (x - r) and the root is checked again.
+     This allows us to determine the multiplicity of the roots.
+     The roots are counted, so the procedure can terminate when all roots have been found. *)
   let chienSearch ((coeffs, deg) as pol : polynom) =
     let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" deg in
     let rts_init =

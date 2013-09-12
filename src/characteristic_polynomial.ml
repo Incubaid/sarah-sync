@@ -1,4 +1,5 @@
-(* Module to evaluate the charateristic polynomial of a set *)
+(* Module to evaluate the charateristic polynomial of a set.
+   All operations are performed over a finite field *)
 
 open FiniteField
 
@@ -11,7 +12,7 @@ struct
   type set = element list
 
 
-  (* Evaluate charateristic polynomial in field F *)
+  (* Evaluate charateristic polynomial in field F in a specified point *)
   let evalCharPoly (s : set) (point : element) =
     let rec loop l acc = 
       match l with

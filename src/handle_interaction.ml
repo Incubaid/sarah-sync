@@ -1,9 +1,10 @@
-(* Additional functions used in the interaction with the database and syncing *)
+(* Additional functions used in the interaction with the database and the actual syncing. *)
 
 open Lwt
 open Read_file
 
 type filename = string
+
 
 (* Type of messages being sent *)
 type message = Hash of string * string * int    (* Hashes and the block they identify *)
@@ -19,7 +20,7 @@ let control_hash (file : filename) hash_function =
   Lwt_io.with_file ~mode:Lwt_io.input file hash
 
 
-(* Missing in Lwt_list *)
+(* Function that is missing in Lwt_list *)
 let mapi f list =
   let rec loop acc i =
     function

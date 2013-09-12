@@ -1,4 +1,4 @@
-(* Syncing of two files, with database interaction. 
+(* Syncing of two files, with database interaction.
    Size of the finite field is determined automatically. *)
 
 open Read_file
@@ -16,7 +16,7 @@ module Syncing =
 struct
 
   type filename = string
- 
+
 
   (* Syncing *)
   let sync (client : filename) (server : filename) partition hash_function db =
@@ -68,14 +68,14 @@ struct
     let current_pos = ref 0 in
     let decode m =
       match m with
-      | Original orig -> 
+      | Original orig ->
         update_database db hash_function orig !current_pos location >>= fun new_pos ->
         current_pos := new_pos ;
         Lwt.return orig
       | Hash (hash, hash_2, i) ->
         Signature.get_location hash hash_2 db >>= fun opt ->
         match opt with
-        | Some (begin_pos, size, file) -> 
+        | Some (begin_pos, size, file) ->
           Signature.add_to_database (hash, hash_2, !current_pos, size, location) ~db >>= fun () ->
           let () = current_pos := !current_pos + size in
           get_block begin_pos size file
@@ -106,7 +106,7 @@ struct
 
   (* Syncing by dividing into blocks *)
   let sync_with_blocks file1 file2 size hash_function location db_name =
-    Lwt_main.run 
+    Lwt_main.run
       (
         Hotc.create db_name [] >>= fun db ->
         sync file1 file2 (blocks ~size) hash_function db >>= fun (nr_sent, msg, prts1,l2) ->
@@ -116,8 +116,8 @@ struct
 
   (* Syncing by partitioning on the words *)
   let sync_with_words file1 file2 hash_function location db_name =
-    Lwt_main.run 
-      (    
+    Lwt_main.run
+      (
         Hotc.create db_name [] >>= fun db ->
         sync file1 file2 words hash_function db >>= fun (nr_sent, msg, prts1, l2) ->
         reconstruct msg prts1 l2 location hash_function nr_sent db
@@ -126,7 +126,7 @@ struct
 
   (* Syncing by partitioning on whitespace *)
   let sync_with_whitespace file1 file2 size hash_function location db_name =
-    Lwt_main.run 
+    Lwt_main.run
       (
         Hotc.create db_name [] >>= fun db ->
         sync file1 file2 (blocks_using_whitespace ~size) hash_function db >>= fun (nr_sent, msg, prts1, l2) ->
@@ -144,30 +144,3 @@ struct
       )
 
 end
-
-(*
-(* ========== Tests ========== *)
-
-module Sync = Syncing ;;
-
-(* Testen voor fisher.txt *)
-let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1 outfile1) "/tmp/test1.db" in
-let () = Printf.printf "========================================\n%!" in
-let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1 outfile2) "/tmp/test2.db" in
-let () = Printf.printf "========================================\n%!" in
-let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1 outfile3) "/tmp/test3.db" in
-let () = Printf.printf "========================================\n%!" in
-let outfile4 = "/home/spare/Documents/Output/test4" in
-let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1 outfile4) "/tmp/test4.db" in
-print_string "Done.\n" ;;
-
-
-(* Testen voor big.bmp *)
-let () = Printf.printf "========================================\n%!" in
-let outfile = "/home/spare/Documents/Output/test_big" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4096 Sync.sha1 outfile) "/tmp/test_big.db" in
-print_string "Done.\n"
-*)

@@ -1,4 +1,4 @@
-(* Command line *)
+(* This module provides the possibility to use the command line*)
 
 open Lwt
 open Read_file

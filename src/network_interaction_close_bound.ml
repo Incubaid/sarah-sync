@@ -1,4 +1,5 @@
-(* Set reconciliation with network-interaction *)
+(* Set reconciliation with network-interaction.
+   The size of the finite field is determined by the algorithm itself. *)
 
 open Lwt
 open FiniteField
@@ -17,7 +18,7 @@ struct
 
   (* ====== CLIENT ====== *)
 
-  (* Sending extra blocks *)
+  (* Sending extra blocks, because they were not present after all. *)
   let send_extra_blocks ic oc info_client =
     let rec loop () =
       Llio.input_int ic >>= fun i ->
@@ -131,7 +132,7 @@ struct
     Llio.input_list Llio_extra.input_message_el ic >>= fun msg_rev ->
     let msg = List.rev msg_rev in
     Llio.input_string ic >>= fun orig_hash ->
-    let size_sent = ref 0 in    (* Calculating the size of the information has to been sent *)
+    let size_sent = ref 0 in    (* Calculating the size of the information that has been sent *)
     let current_pos = ref 0 in
     let decode m =
       match m with
