@@ -13,6 +13,7 @@ struct
   type element = G.P.element
   type polynom = G.P.polynom
 
+
   (* The largest basis element *)
   let largest = exp primEl (w - 1)
 
@@ -26,22 +27,18 @@ struct
 
   (* Trace function Tr (x) *)
   let init_trace () =
-    let tr = Array.make ((1 lsl (w - 1)) + 1) zero in
-    for i = 0 to w - 1 do
-      tr.(1 lsl i) <- one
-    done ;
-    (tr, 1 lsl (w-1))
+    Array.make w one
 
 
   (* Update trace function to be evaluated in the next basis element.
      Returns this basis element, for future reference.*)
-  let update_trace (trace, _ : polynom) b =
+  let update_trace trace b =
     let b' = next_basis_el b in
     if b' = one
     then
       begin
         for i = 0 to w - 1 do
-          trace.(1 lsl i) <- one
+          trace.(i) <- one
         done;
         b'
       end
@@ -53,8 +50,7 @@ struct
           else
             begin
               let pow' = square pow in
-              let pos = 1 lsl i in
-              trace.(pos) <- trace.(pos) *: pow ;
+              trace.(i) <- trace.(i) *: pow ;
               loop (i + 1) pow'
             end
         in
@@ -92,7 +88,7 @@ struct
                   begin
                     let trace = init_trace () in (* Tr(x) *)
                     let rec factorize f b =
-                      let p1 = G.gcd f trace in
+                      let p1 = G.gcd_with_trace f trace in
                       if G.P.get_degree p1 = 0 || G.P.equal_pols p1 f   (* No good b *)
                       then
                         begin
@@ -117,6 +113,5 @@ struct
         end
     in
     aux [] pol
-
 
 end

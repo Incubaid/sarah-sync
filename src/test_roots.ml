@@ -5,7 +5,9 @@ open FiniteField
 open Chien_search
 open Find_roots
 
-module Field = GF1024
+module Field = FiniteField.Make(struct
+   let w = 13
+end)
 
 module C = Chien(Field)
 module BTA = Root_finder(Field)
@@ -32,13 +34,23 @@ let test_compare () =
     ([|zero ; wrap 5; one ; zero ; one|], 4), "test10"
   ]
   in
+
   let test_one ((p,t) as poly, id) =
     let pol_copy = (Array.copy p, t) in   (* Chien modifies the array *)
+
+    let st1 = Unix.gettimeofday () in
+    let () = Printf.printf "Performing Chien\n%!" in
     let ch = C.chienSearch poly in
+    let sp1 = Unix.gettimeofday () in
+
+    let st2 = Unix.gettimeofday () in
+    let () = Printf.printf "Performing BTA\n%!" in
     let bta = BTA.roots pol_copy in
+    let sp2 = Unix.gettimeofday () in
+
     let msg = Printf.sprintf "Roots found by Chien and BTA do not match in %s." id in
-    print_string "Chien: " ; List.iter (fun el -> (print el ; print_string " ")) ch; print_newline () ;
-    print_string "BTA:   " ; List.iter (fun el -> (print el ; print_string " ")) bta; print_newline () ;
+    Printf.printf "Time chien: %f\n%!" (sp1 -. st1) ;
+    Printf.printf "Time bta: %f\n%!" (sp2 -. st2) ;
     OUnit.assert_equal (List.sort compare ch) (List.sort compare bta) ~msg
   in
   List.iter test_one tests
