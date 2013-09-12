@@ -5,7 +5,7 @@ This file presents a simple use-case where we want to upload the file big.bmp, w
 
 #### Local
 
-To sync the files locally we use the command
+To sync the files locally, we use the command
 
     ./ssync local "big.bmp" "big_changed.bmp" "big_out_1" "blocks" -f "auto" -d "none"
 
