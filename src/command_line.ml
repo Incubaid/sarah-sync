@@ -40,7 +40,7 @@ let load_database_cmd =
     Arg.(required & pos 1 (some string) None & info [] ~docv:"DB_NAME" ~doc)
   in
   let partition =
-    let doc = "Partition function to use." in
+    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines. Any other entry will default to the blocks-function." in
     Arg.(required & pos 2 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let block_size =
@@ -150,7 +150,7 @@ let client_cmd =
     Arg.(required & pos 3 (some int) None & info [] ~docv:"PORT" ~doc)
   in
   let partition =
-    let doc = "Partition function to use." in
+    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines. Any other entry will default to the blocks-function." in
     Arg.(required & pos 4 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let field_size =
@@ -259,7 +259,7 @@ let local_cmd =
     Arg.(required & pos 2 (some string) None & info [] ~docv:"DEST" ~doc)
   in
   let partition =
-    let doc = "Partition function to use." in
+    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines.  Any other entry will default to the blocks-function." in
     Arg.(required & pos 3 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let field_size =
