@@ -38,11 +38,10 @@ struct
      This allows us to determine the multiplicity of the roots.
      The roots are counted, so the procedure can terminate when all roots have been found. *)
   let chien_search ((coeffs, deg) as pol : polynom) =
-    let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" deg in
     let rts_init =
-    if coeffs.(0) =: zero
-    then [zero]
-    else []
+      if coeffs.(0) =: zero
+      then [zero]
+      else []
     in
     let rec find el rts k ((coeffs, t) as p) =
       if List.length rts == deg || k == q

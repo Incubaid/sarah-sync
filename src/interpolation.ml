@@ -97,9 +97,7 @@ struct
      Constructs the system and solves it with Gaussian elimination.
      Returns the coefficients of numerator and denominator *)
   let interpolate (points : element list) (values : element list) m delta =
-    let () = Printf.printf "Constructing system for interpolation.\n%!" in
     let sys, d1, d2 = construct_system points values m delta in
-    let () = Printf.printf "Solving system for interpolation.\n%!" in
     let solution =  M.solve_system sys in
     let cfsN = Array.init (d1 + 1)
       ( fun i ->

@@ -53,13 +53,11 @@ struct
     let extra_pts = EP.extra_eval_pts k in
     let actual_vals = S.get_rational_values set1_un set2_un extra_pts in
     let m, cfs_num, cfs_denom = EP.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
-    let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
     let to_send_by_1 =
       if m = 0
       then []
       else S.reconcile cfs_num cfs_denom
     in
-    let () = Printf.printf "Reconciliation done. %i blocks of set1 are missing.\n%!" (List.length to_send_by_1) in
     let element_or_original i (el, orig) =
       if List.mem el to_send_by_1
       then Original orig
@@ -86,7 +84,6 @@ struct
 
   (* Reconstruction *)
  let reconstruct (msg, hash) parts1 assoc_list2 location hash_function nr_sent =
-    let () = Printf.printf "Reconstruction.\n%!" in
     let number = ref nr_sent in
     let decode m =
       match m with
@@ -104,7 +101,7 @@ struct
     if new_hash <> hash
     then
       begin
-        Printf.printf "Original hash: %s.\nObtained hash: %s.\n%!" hash new_hash;
+        Printf.printf "Reconstruction not correct. Original hash: %s.\nObtained hash: %s.\n%!" hash new_hash;
         raise Reconstruction_not_perfect
       end
     else Printf.printf "Reconstruction completed. %i blocks out of %i have been sent.\n%!" !number (List.length parts1)
@@ -139,41 +136,3 @@ struct
     reconstruct msg prts1 l2 location hash_function nr_sent
 
 end
-
-(*
-(* ========== Tests ========== *)
-
-module Field = FiniteField.Make(struct
-  let w = 16
-end) 
-
-module Sync = Syncing(Field) ;; 
-
-
-(* Testen voor fisher.txt *)
-let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile1 in
-let () = Printf.printf "========================================\n%!" in
-let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1) outfile2 in
-let () = Printf.printf "========================================\n%!" in
-let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile3 in
-let () = Printf.printf "========================================\n%!" in
-let outfile4 = "/home/spare/Documents/Output/test4" in
-let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1) outfile4 in
-print_string "Done.\n"
-
-
-(* Testen voor big.bmp *)
-
-(*module Field = FiniteField.Make(struct
-  let w = 13
-end)
-
-module Sync = Syncing(Field) ;; *)
-
-(*let outfile = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4000 Sync.sha1) outfile in
-print_string "Done.\n" *)
-*)

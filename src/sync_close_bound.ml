@@ -36,7 +36,6 @@ struct
     let set1, full_info_client = SC.construct_full_info info_client in
     Signature.commit_info info_server db >>= fun hashes_server ->
     let set2 = SC.construct hashes_server in
-    Lwt_io.printlf "Looking for m.%!" >>= fun () ->
     let size_1 = List.length set1 in
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
@@ -46,13 +45,11 @@ struct
     let extra_pts = EP.extra_eval_pts k in
     let actual_vals = S.get_rational_values set1 set2 extra_pts in
     let m, cfs_num, cfs_denom = EP.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
-    Lwt_io.printlf "Found m: %i.%!" m >>= fun () ->
     let to_send_by_1 =
       if m = 0
       then []
       else S.reconcile cfs_num cfs_denom
     in
-    Lwt_io.printlf "Reconciliation done. %i blocks of set1 are missing.\n%!" (List.length to_send_by_1) >>= fun () ->
     create_message to_send_by_1 full_info_client >>=  fun message ->
     let complete_message = (message , total_hash) in
     Lwt.return (List.length to_send_by_1 , complete_message , info_client , hashes_server)
@@ -63,7 +60,6 @@ struct
 
   (* Reconstruction *)
   let reconstruct (msg, hash) info_client hashes_server location hash_function nr_sent db =
-    Lwt_io.printlf "Reconstruction.%!">>= fun () ->
     let number = ref nr_sent in
     let current_pos = ref 0 in
     let decode m =
@@ -93,7 +89,7 @@ struct
     if new_hash <> hash
     then
       begin
-        Lwt_io.printlf "Original hash: %s.\nObtained hash: %s.%!" hash new_hash >>= fun () ->
+        Lwt_io.printlf "Reconstruction not correct. Original hash: %s.\nObtained hash: %s.%!" hash new_hash >>= fun () ->
         raise Reconstruction_not_perfect
       end
     else Lwt_io.printlf "Reconstruction completed. %i blocks out of %i have been sent.\n%!" !number (List.length info_client)

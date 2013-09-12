@@ -91,7 +91,6 @@ struct
           if min = init_max
           then
             begin
-              let () = Printf.printf "Min is %i. Max is %i\n%!" min init_max in
               let cfs_num, cfs_denom = S.interpolation_B (take min eval_pts) (take min rat_vals) delta in
               min, cfs_num, cfs_denom
             end
@@ -105,7 +104,6 @@ struct
               if good_min = init_max
               then
                 begin
-                  let () = Printf.printf "Goodmin is %i. Max is %i\n%!" good_min init_max in
                   let cfs_num, cfs_denom = S.interpolation_B (take good_min eval_pts) (take good_min rat_vals) delta in
                   good_min, cfs_num, cfs_denom
                 end
@@ -120,7 +118,6 @@ struct
                     else half
                   in
                   try
-                    let () = Printf.printf "Considering m: %i. Max is %i\n%!" good_min init_max in
                     let cfs_num, cfs_denom = S.interpolation_B (take good_min eval_pts) (take good_min rat_vals) delta in
                     let ourNumVals = List.map (S.P.evaluate_pol cfs_num) extra_pts in
                     let ourDenomVals = List.map (S.P.evaluate_pol cfs_denom) extra_pts in
@@ -197,7 +194,6 @@ struct
                   in
                   let pts = eval_pts good_min in
                   try
-                    let () = Printf.printf "Considering m: %i.\n%!" good_min in
                     let used_chi1 = take good_min chi1 in         (* Get the sample points we need*)
                     let cfs_num, cfs_denom = S.interpolation size_1 used_chi1 s2 pts in
                     let k = 1 in                                  (* CHANGE THIS *)

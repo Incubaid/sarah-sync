@@ -31,7 +31,6 @@ struct
     let set1, full_info_client = SC.construct_full_info info_client in
     Signature.commit_info info_server db >>= fun hashes_server ->
     let set2 = SC.construct hashes_server in
-    Lwt_io.printlf "Looking for m.%!" >>= fun () ->
     let size_1 = List.length set1 in
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
@@ -41,13 +40,11 @@ struct
     let extra_pts = EP.extra_eval_pts k in
     let actual_vals = S.get_rational_values set1 set2 extra_pts in
     let m, cfs_num, cfs_denom = EP.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
-    Lwt_io.printlf "Found m: %i.%!" m >>= fun () ->
     let to_send_by_1 =
       if m = 0
       then []
       else S.reconcile cfs_num cfs_denom
     in
-    Lwt_io.printf "Reconciliation done. %i blocks of set1 are missing.\n%!" (List.length to_send_by_1) >>= fun () ->
     create_message to_send_by_1 full_info_client >>= fun message ->
     let complete_message = (message , total_hash) in
     Lwt.return (List.length to_send_by_1 , complete_message , info_client , hashes_server)
@@ -58,7 +55,6 @@ struct
 
   (* Reconstruction *)
   let reconstruct (msg, hash) info_client hashes_server location hash_function nr_sent db =
-    Lwt_io.printlf "Reconstruction.%!" >>= fun () ->
     let number = ref nr_sent in
     let current_pos = ref 0 in
     let decode m =
@@ -88,7 +84,7 @@ struct
     if new_hash <> hash
     then
       begin
-        Lwt_io.printlf "Original hash: %s.\nObtained hash: %s.%!" hash new_hash >>= fun () ->
+        Lwt_io.printlf "Reconstruction not correct. Original hash: %s.\nObtained hash: %s.%!" hash new_hash >>= fun () ->
         raise Reconstruction_not_perfect
       end
     else Lwt_io.printlf "Reconstruction completed. %i blocks out of %i have been sent.%!" !number (List.length info_client)
@@ -139,35 +135,3 @@ struct
       )
 
 end
-
-(*
-(* Tests. *)
-
-module Field = FiniteField.Make(struct
-  let w = 16
-end)
-
-module Sync = Syncing(Field) ;;
-
-
-(* Testen voor fisher.txt *)
-let outfile1 = "/home/spare/Documents/Output/test1" in
-let () = Time.time (Sync.sync_with_words "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1 outfile1) "/tmp/test1.db" in
-let () = Printf.printf "========================================\n%!" in
-let outfile2 = "/home/spare/Documents/Output/test2" in
-let () = Time.time (Sync.sync_with_lines "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" Sync.sha1 outfile2) "/tmp/test2.db" in
-let () = Printf.printf "========================================\n%!" in
-let outfile3 = "/home/spare/Documents/Output/test3" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1 outfile3) "/tmp/test3.db" in
-let () = Printf.printf "========================================\n%!" in
-let outfile4 = "/home/spare/Documents/Output/test4" in
-let () = Time.time (Sync.sync_with_whitespace "/home/spare/Documents/FilesOmTeSyncen/old/fischer.txt" "/home/spare/Documents/FilesOmTeSyncen/new/fischer.txt" 10 Sync.sha1 outfile4) "/tmp/test4.db" in
-print_string "Done.\n" ;;
-
-
-(* Testen voor big.bmp *)
-let () = Printf.printf "========================================\n%!" in
-let outfile = "/home/spare/Documents/Output/test_big" in
-let () = Time.time (Sync.sync_with_blocks "/home/spare/Documents/FilesOmTeSyncen/old/big.bmp" "/home/spare/Documents/FilesOmTeSyncen/new/big.bmp" 4096 Sync.sha1 outfile) "/tmp/test_big.db" in
-print_string "Done.\n"
-*)
