@@ -62,7 +62,7 @@ The file will be saved at the specified destination.
 
 #### Local syncing
 
-    ./ssync local "file_1" "file_2" "destination" "partition" -f field_size -s block_size -db "db_name"
+    ./ssync local "file_1" "file_2" "destination" "partition" -f field_size -s block_size -d "db_name"
 
 The optional argument "db_name" specifies the name of the database to use. When the argument is missing or "none" is provided, no database is used.
 

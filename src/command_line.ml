@@ -272,7 +272,7 @@ let local_cmd =
   in
   let db_name =
     let doc = "Database to use." in
-    Arg.(value & opt string "none" & info ["db"; "database"] ~docv:"DB_NAME" ~doc)
+    Arg.(value & opt string "none" & info ["d"; "database"] ~docv:"DB_NAME" ~doc)
   in
   let doc = "Syncing locally." in
   let man = [

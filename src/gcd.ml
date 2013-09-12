@@ -11,7 +11,7 @@ struct
   module P = Polynom(F)
 
   type element = P.element
-  type polynom = P.polynom (* Coefficients of polynomial, sorted according to ascending powers of x. *)
+  type polynom = P.polynom     (* Coefficients of polynomial, sorted according to ascending powers of x. *)
 
 
   (* Euclidean division of two polynomials.
@@ -21,13 +21,11 @@ struct
     if deg_d = 0    (* Denominator is a constant *)
     then
       begin
-       (* let c = denom.(0) in *)
         let rem = [| zero |] in
         if lead_d =: one
         then (num, d_n) , (rem, 0)
         else
           begin
-            (* Array.iteri (fun i el -> (num.(i) <- el /: c)) num; *)
                Array.iteri (fun i el -> (num.(i) <- el /: lead_d)) num;
             (num, d_n), (rem, 0)
           end
@@ -78,27 +76,6 @@ struct
           (fun i el ->
             pol.(i) <- el /: leading
           ) pol
-
-
-  (* Find the unique monic gcd of two polynomials *)
-  let gcd ((pol_a, deg_a) as p_a : polynom) ((pol_b, deg_b) as p_b : polynom) =
-    let rec aux p1 p2 =
-      let b, _ = P.is_zero p2 in
-      if b
-      then p1
-      else
-        begin
-          let _, rest = divide p1 p2 in
-          aux p2 rest
-        end
-    in
-    let result =
-      if deg_a < deg_b
-      then aux p_b p_a
-      else aux p_a p_b
-    in
-    make_monic result ;
-    result
 
 
   (* Get coefficient. Used in the division of a trace function by a polynomial. *)
@@ -250,6 +227,7 @@ struct
         loop []
 
 
+
   (* Find the unique monic gcd of a polynomial and the trace-function.
      The polynomial will never be a constant*)
   let gcd_with_trace ((pol, deg) as p : polynom) trace =
@@ -297,5 +275,6 @@ struct
         make_monic result ;
         result
       end
+
 
 end
