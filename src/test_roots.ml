@@ -39,12 +39,10 @@ let test_compare () =
     let pol_copy = (Array.copy p, t) in   (* Chien modifies the array *)
 
     let st1 = Unix.gettimeofday () in
-    let () = Printf.printf "Performing Chien\n%!" in
-    let ch = C.chienSearch poly in
+    let ch = C.chien_search poly in
     let sp1 = Unix.gettimeofday () in
 
     let st2 = Unix.gettimeofday () in
-    let () = Printf.printf "Performing BTA\n%!" in
     let bta = BTA.roots pol_copy in
     let sp2 = Unix.gettimeofday () in
 

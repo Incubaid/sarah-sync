@@ -13,7 +13,7 @@ struct
 
 
   (* Evaluate charateristic polynomial in field F in a specified point *)
-  let evalCharPoly (s : set) (point : element) =
+  let eval_char_poly (s : set) (point : element) =
     let rec loop l acc = 
       match l with
       | [] -> acc

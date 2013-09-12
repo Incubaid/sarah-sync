@@ -31,7 +31,7 @@ let test_chien_search () =
   ]
   in
   let test_one (poly, roots) =
-    let answer = C.chienSearch poly in
+    let answer = C.chien_search poly in
     let msg = Printf.sprintf "Incorrect roots." in
     OUnit.assert_equal (List.sort compare answer) (List.sort compare roots) ~msg
   in

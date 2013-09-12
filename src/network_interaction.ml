@@ -53,10 +53,10 @@ struct
           Llio.output_int oc l >>= fun () ->                   (* Send size of set *)
           Llio.input_int ic >>= fun max_m ->                   (* Maximum number of sample points *)
           Llio.input_int ic >>= fun k ->                       (* Number of extra evaluation points *)
-          let eval_pts = EP.evalPts max_m in
-          let extra_pts = EP.extraEvalPts k in
-          let chi = List.map (S.CharPoly.evalCharPoly set) eval_pts in
-          let extra = List.map (S.CharPoly.evalCharPoly set) extra_pts in
+          let eval_pts = EP.eval_pts max_m in
+          let extra_pts = EP.extra_eval_pts k in
+          let chi = List.map (S.CharPoly.eval_char_poly set) eval_pts in
+          let extra = List.map (S.CharPoly.eval_char_poly set) extra_pts in
           Llio.output_list
             (fun oc el -> Llio.output_int oc (F.unwrap el))
             oc chi >>= fun () ->
@@ -116,7 +116,7 @@ struct
     Llio.input_list Llio_extra.input_message_el ic >>= fun msg_rev ->
     let msg = List.rev msg_rev in
     Llio.input_string ic >>= fun orig_hash ->
-    let size_sent = ref 0 in    (* Calculating the size of the information has to been sent *)
+    let size_sent = ref 0 in    (* Calculating the size of the information that has been sent *)
     let current_pos = ref 0 in
     let decode m =
       match m with

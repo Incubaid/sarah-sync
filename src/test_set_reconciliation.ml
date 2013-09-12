@@ -29,9 +29,9 @@ let test_set_reconc () =
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
     let init_max, k = EP1.get_max_vals size_1 size_2 in
-    let eval_pts = EP1.evalPts init_max in
+    let eval_pts = EP1.eval_pts init_max in
     let rat_vals = S1.get_rational_values set1 set2 eval_pts in
-    let extra_pts = EP1.extraEvalPts k in
+    let extra_pts = EP1.extra_eval_pts k in
     let actual_vals = S1.get_rational_values set1 set2 extra_pts in
     let m, ((cfs_num, dN) as c_n), ((cfs_denom, dD) as c_d) = EP1.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in
@@ -113,9 +113,9 @@ let test_set_reconc_bigger () =
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
     let init_max, k = EP2.get_max_vals size_1 size_2 in
-    let eval_pts = EP2.evalPts init_max in
+    let eval_pts = EP2.eval_pts init_max in
     let rat_vals = S2.get_rational_values set1 set2 eval_pts in
-    let extra_pts = EP2.extraEvalPts k in
+    let extra_pts = EP2.extra_eval_pts k in
     let actual_vals = S2.get_rational_values set1 set2 extra_pts in
     let m, ((cfs_num, dN) as c_n), ((cfs_denom, dD) as c_d) = EP2.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     let () = Printf.printf "DECIDED TO USE: m = %i.\n%!" m in

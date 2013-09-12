@@ -37,7 +37,7 @@ struct
      After a root r has been detected, the polynomial is divided by (x - r) and the root is checked again.
      This allows us to determine the multiplicity of the roots.
      The roots are counted, so the procedure can terminate when all roots have been found. *)
-  let chienSearch ((coeffs, deg) as pol : polynom) =
+  let chien_search ((coeffs, deg) as pol : polynom) =
     let () = Printf.printf "Starting Chien search. Polynomial is of degree %i.\n%!" deg in
     let rts_init =
     if coeffs.(0) =: zero

@@ -41,9 +41,9 @@ struct
     let size_2 = List.length set2 in
     let delta = size_1 - size_2 in
     let init_max, k = EP.get_max_vals size_1 size_2 in
-    let eval_pts = EP.evalPts init_max in
+    let eval_pts = EP.eval_pts init_max in
     let rat_vals = S.get_rational_values set1 set2 eval_pts in
-    let extra_pts = EP.extraEvalPts k in
+    let extra_pts = EP.extra_eval_pts k in
     let actual_vals = S.get_rational_values set1 set2 extra_pts in
     let m, cfs_num, cfs_denom = EP.findM delta rat_vals actual_vals init_max eval_pts extra_pts in
     Lwt_io.printlf "Found m: %i.%!" m >>= fun () ->

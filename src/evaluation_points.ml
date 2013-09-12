@@ -13,26 +13,26 @@ struct
   module S = SetReconciliation(F)
 
   (* Produce a given number of evaluation points. These will be: [q-1, q-2, ...] *)
-  let evalPts m =
-    let rec getPoints start len =
+  let eval_pts m =
+    let rec get_points start len =
       if len = 0
       then []
-      else wrap start :: (getPoints (start - 1) (len - 1))
+      else wrap start :: (get_points (start - 1) (len - 1))
     in
-    getPoints (q - 1) m
+    get_points (q - 1) m
 
 
   (* Determine extra evaluation points.
      Used in the function to determine an upper bound on m.
      k: number of extra points requested. Points will be: [2^(w-1) + 1, 2^(w-1) + 2, ...] *)
-  let extraEvalPts k =
+  let extra_eval_pts k =
     let first = (1 lsl (w - 1)) + 1 in
-    let rec getPoints start len =
+    let rec get_points start len =
       if len = 0
       then []
-      else wrap start :: (getPoints (start + 1) (len - 1))
+      else wrap start :: (get_points (start + 1) (len - 1))
     in
-    getPoints first k
+    get_points first k
 
 
   (* Get the first n elements of a list *)
@@ -167,7 +167,7 @@ struct
           if min = init_max
           then
             begin
-              let pts = evalPts min in
+              let pts = eval_pts min in
               let cfs_num, cfs_denom = S.interpolation size_1 (take min chi1) s2 pts in
               min, cfs_num, cfs_denom
             end
@@ -181,7 +181,7 @@ struct
               if good_min = init_max
               then
                 begin
-                  let pts = evalPts good_min in
+                  let pts = eval_pts good_min in
                   let cfs_num, cfs_denom = S.interpolation size_1 (take good_min chi1) s2 pts in
                   good_min, cfs_num, cfs_denom
                 end
@@ -195,15 +195,15 @@ struct
                     then arith_mean half init_max
                     else half
                   in
-                  let pts = evalPts good_min in
+                  let pts = eval_pts good_min in
                   try
                     let () = Printf.printf "Considering m: %i.\n%!" good_min in
                     let used_chi1 = take good_min chi1 in         (* Get the sample points we need*)
                     let cfs_num, cfs_denom = S.interpolation size_1 used_chi1 s2 pts in
                     let k = 1 in                                  (* CHANGE THIS *)
-                    let extraPts = extraEvalPts k in
+                    let extraPts = extra_eval_pts k in
                     let actual_chi_1 = take k extra1 in
-                    let actualVals = S.evalCharPols actual_chi_1 s2 extraPts in
+                    let actualVals = S.eval_char_pols actual_chi_1 s2 extraPts in
                     let ourNumVals = List.map (S.P.evaluate_pol cfs_num) extraPts in
                     let ourDenomVals = List.map (S.P.evaluate_pol cfs_denom) extraPts in
                     let ourVals = List.map2 (/:) ourNumVals ourDenomVals in
