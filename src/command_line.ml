@@ -1,4 +1,4 @@
-(* This module provides the possibility to use the command line*)
+(* This module provides the possibility to use the command line *)
 
 open Lwt
 open Read_file
@@ -12,7 +12,7 @@ let hash_function = function l ->
 
 
 (* Loading the database *)
-let load file db_name partition block_size=
+let load block_size files partition db_name =
   Lwt_main.run
     (
       let partition_function =
@@ -23,25 +23,28 @@ let load file db_name partition block_size=
         | "lines" -> lines
         | _ -> blocks ~size:block_size
       in
-      partition_function file hash_function >>= fun parts ->
+      Lwt_list.map_s (fun file -> partition_function file hash_function) files >>= fun parts_list ->
       Signature.database db_name >>= fun db ->
-      Signature.commit_info parts db >>= fun _ ->
-      Lwt.return ()
+      let add_one parts =
+        Signature.commit_info parts db >>= fun _ ->
+        Lwt.return ()
+      in
+      Lwt_list.iter_s add_one parts_list
     )
 
 
 let load_database_cmd =
-  let file =
-    let doc = "Initial file to load in database." in
-    Arg.(required & pos 0 (some string) None & info [] ~docv:"FILE" ~doc)
+  let files =
+    let doc = "Initial files to load in database. Multiple files can be provided. A block can be present in more than one of these files, but at most two locations will be stored in the database. " in
+    Arg.(non_empty & pos_left ~rev:true 1  file [] & info [] ~docv:"FILE" ~doc)
   in
   let db_name =
     let doc = "Name of the database." in
-    Arg.(required & pos 1 (some string) None & info [] ~docv:"DB_NAME" ~doc)
+    Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"DB_NAME" ~doc)
   in
   let partition =
-    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines. Any other entry will default to the blocks-function." in
-    Arg.(required & pos 2 (some string) None & info [] ~docv:"PARTS" ~doc)
+    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines. Any other entry will default to the blocks-function. The blocks and whitespace options can use the extra size-argument. " in
+    Arg.(required & pos ~rev:true 1 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let block_size =
     let doc = "Size of the blocks. Only needs to be specified when the partition function requires it." in
@@ -50,9 +53,9 @@ let load_database_cmd =
   let doc = "Loading database." in
   let man = [
     `S "DESCRIPTION" ;
-    `P "Partition a file and initialize database with the obtained parts."]
+    `P "Partition files using a specified partition function and initialize database with the obtained parts."]
   in
-  Term.(pure load $ file $ db_name $ partition $ block_size),
+  Term.(pure load $ block_size $ files $ db_name $ partition),
   Term.info "load_db" ~doc ~man
 
 
@@ -93,7 +96,7 @@ let server_cmd =
     Arg.(required & pos 2 (some int) None & info [] ~docv:"PORT" ~doc)
   in
   let field_size =
-    let doc = "Size w of the finite field GF(2^w)." in
+    let doc = "Size w of the finite field GF(2^w). When the argument is missing (or auto is provided), the field size is determined by the method itself." in
     Arg.(value & opt string "auto" & info ["f"; "field"] ~docv:"FIELD" ~doc)
   in
   let doc = "Setting up the server." in
@@ -134,11 +137,11 @@ let client file dest host port partition field_size block_size=
 
 let client_cmd =
   let file =
-    let doc = "File to sync." in
+    let doc = "File to upload to the server." in
     Arg.(required & pos 0 (some string) None & info [] ~docv:"FILE" ~doc)
   in
   let dest =
-    let doc = "Destination file." in
+    let doc = "Destination to store the uploaded file. Will be overwritten if present." in
     Arg.(required & pos 1 (some string) None & info [] ~docv:"DEST" ~doc)
   in
   let host =
@@ -150,11 +153,11 @@ let client_cmd =
     Arg.(required & pos 3 (some int) None & info [] ~docv:"PORT" ~doc)
   in
   let partition =
-    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines. Any other entry will default to the blocks-function." in
+    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines. Any other entry will default to the blocks-function. The blocks and whitespace options can use the extra size-argument." in
     Arg.(required & pos 4 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let field_size =
-    let doc = "Size w of the finite field GF(2^w)." in
+    let doc = "Size w of the finite field GF(2^w). When the argument is missing (or auto is provided), the field size is determined by the method itself." in
     Arg.(value & opt string "auto" & info ["f"; "field"] ~docv:"FIELD" ~doc)
   in
   let block_size =
@@ -255,15 +258,15 @@ let local_cmd =
     Arg.(required & pos 1 (some string) None & info [] ~docv:"FILE2" ~doc)
   in
   let dest =
-    let doc = "Destination file." in
+    let doc = "Destination to store the reconstructed file. Will be overwritten if present." in
     Arg.(required & pos 2 (some string) None & info [] ~docv:"DEST" ~doc)
   in
   let partition =
-    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines.  Any other entry will default to the blocks-function." in
+    let doc = "Partition function to use. Currently the supported options are: words, blocks, whitespace and lines.  Any other entry will default to the blocks-function. The blocks and whitespace options can use the extra size-argument." in
     Arg.(required & pos 3 (some string) None & info [] ~docv:"PARTS" ~doc)
   in
   let field_size =
-    let doc = "Size w of the finite field GF(2^w)." in
+    let doc = "Size w of the finite field GF(2^w). When the argument is missing (or auto is provided), the field size is determined by the method itself." in
     Arg.(value & opt string "auto" & info ["f"; "field"] ~docv:"FIELD" ~doc)
   in
   let block_size =
@@ -271,7 +274,7 @@ let local_cmd =
     Arg.(value & opt int 4096 & info ["s"; "size"] ~docv:"SIZE" ~doc)
   in
   let db_name =
-    let doc = "Database to use." in
+    let doc = "Database to use. The database will be updated with the new information." in
     Arg.(value & opt string "none" & info ["d"; "database"] ~docv:"DB_NAME" ~doc)
   in
   let doc = "Syncing locally." in
@@ -285,10 +288,10 @@ let local_cmd =
 
 (* Default *)
 let default_cmd =
-  let doc = "tests for syncing" in
+  let doc = "ssync: a syncing algorithm" in
   let man = [
     `S "DESCRIPTION" ;
-    `P "syncing. With or without network-interaction, with or without database-interaction. Field size can be provided or determined automatically." ]
+    `P "syncing. With or without network-interaction, with or without database-interaction. A finite field is used by the algorithm. The field size can be provided by the user or determined automatically." ]
   in
   Term.(ret (pure (`Ok ()) )) ,
   Term.info "default" ~doc ~man

@@ -21,7 +21,7 @@ Compile with
 
 This will provide a command `./ssync` that can be used to:
 
-* Load a file into a database
+* Load some files into a database
 * Set up the server to handle requests from a client
 * Upload a file on the server
 * Sync two files locally, with or without database access
@@ -35,9 +35,9 @@ Additional information is provided by
 
     ./ssync --help
 
-#### Loading a file 'file' into database 'some_db.db'
+#### Loading files into database 'some_db.db'
 
-    ./ssync load_db "file" "some_db.db" "partition" -s block_size
+    ./ssync load_db "file_1" "file_2" ... "file_n" "some_db.db" "partition" -s block_size
 
 The argument 'partition' specifies the way to partition the files into blocks. Currently 4 different partition functions are provided:
 
